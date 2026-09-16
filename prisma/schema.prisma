@@ -1,0 +1,909 @@
+// Destiny Dots data model.
+// Auth tables (User, Session, Account, Verification) follow Better Auth's schema,
+// including the admin plugin fields (role, banned, banReason, banExpires, impersonatedBy).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Auth
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          String?   @default("student")
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  lastActiveAt  DateTime?
+
+  sessions         Session[]
+  accounts         Account[]
+  profile          Profile?
+  enrollments      Enrollment[]
+  progress         Progress[]
+  bookmarks        Bookmark[]
+  quizAttempts     QuizAttempt[]
+  orders           Order[]
+  subscriptions    Subscription[]
+  entitlements     Entitlement[]
+  resume           Resume?
+  waitlist         MarketplaceWaitlist?
+  auditLogs        AuditLog[]           @relation("AuditActor")
+  savedJobs        SavedJob[]
+  invoices         Invoice[]
+  contactMessages  ContactMessage[]
+  sellerProfile    SellerProfile?
+  projects         Project[]
+  projectPurchases ProjectPurchase[]
+  projectReviews   ProjectReview[]
+  payouts          Payout[]
+
+  @@map("user")
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  impersonatedBy String?
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+/// Better Auth rate-limit storage (also used by the app limiter with "app:" keys).
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Profile & onboarding
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+enum LearnerStage {
+  STUDENT
+  FRESH_GRADUATE
+  WORKING_PROFESSIONAL
+}
+
+enum WeeklyTime {
+  UNDER_5
+  FIVE_TO_TEN
+  OVER_10
+}
+
+enum GoalTimeline {
+  THREE_MONTHS
+  SIX_MONTHS
+  ONE_YEAR
+  EXPLORING
+}
+
+model Profile {
+  userId          String        @id
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stage           LearnerStage?
+  domainInterests String[]
+  weeklyTime      WeeklyTime?
+  goalTimeline    GoalTimeline?
+  headline        String?
+  city            String?
+  onboardedAt     DateTime?
+  updatedAt       DateTime      @updatedAt
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Catalogue
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+model CareerPath {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  domainTag   String
+  title       String
+  summary     String
+  level       Level        @default(BEGINNER)
+  duration    String
+  roles       String[]
+  outcomes    String[]
+  isPublished Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  dots        Dot[]
+  enrollments Enrollment[]
+
+  @@index([domainTag, isPublished])
+}
+
+model Dot {
+  id            String         @id @default(cuid())
+  pathId        String
+  path          CareerPath     @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  order         Int
+  title         String
+  description   String
+  hours         Int            @default(8)
+  isFree        Boolean        @default(false)
+  certification String?
+  resources     DotResource[]
+  questions     QuizQuestion[]
+  progress      Progress[]
+  quizAttempts  QuizAttempt[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([pathId, order])
+}
+
+enum ResourceType {
+  VIDEO
+  DOC
+  PROJECT
+  QUIZ
+  LINK
+}
+
+enum LinkStatus {
+  UNCHECKED
+  OK
+  BROKEN
+}
+
+model Resource {
+  id             String                  @id @default(cuid())
+  title          String
+  url            String
+  type           ResourceType
+  duration       String?
+  isPremium      Boolean                 @default(false)
+  domainTags     String[]
+  topics         String[]
+  level          Level                   @default(BEGINNER)
+  /// Uploaded file in object storage (PDF, slides, images). When set, url may be empty.
+  fileKey        String?
+  fileName       String?
+  fileMime       String?
+  fileSize       Int?
+  /// Whether the page at url allows being shown inside the app (set by the link checker).
+  embeddable     Boolean?
+  linkStatus     LinkStatus              @default(UNCHECKED)
+  lastCheckedAt  DateTime?
+  isSample       Boolean                 @default(false)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  dots           DotResource[]
+  bookmarks      Bookmark[]
+  certifications CertificationResource[]
+}
+
+model DotResource {
+  dotId      String
+  resourceId String
+  order      Int
+  dot        Dot      @relation(fields: [dotId], references: [id], onDelete: Cascade)
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@id([dotId, resourceId])
+}
+
+model QuizQuestion {
+  id          String   @id @default(cuid())
+  dotId       String
+  dot         Dot      @relation(fields: [dotId], references: [id], onDelete: Cascade)
+  order       Int
+  prompt      String
+  options     String[]
+  answerIndex Int
+  explanation String?
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Learning activity
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+model Enrollment {
+  userId         String
+  pathId         String
+  enrolledAt     DateTime   @default(now())
+  lastActivityAt DateTime   @default(now())
+  completedAt    DateTime?
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  path           CareerPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pathId])
+  @@index([pathId])
+}
+
+model Progress {
+  userId      String
+  dotId       String
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dot         Dot      @relation(fields: [dotId], references: [id], onDelete: Cascade)
+
+  @@id([userId, dotId])
+  @@index([dotId])
+}
+
+model Bookmark {
+  userId     String
+  resourceId String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, resourceId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  dotId     String
+  score     Int
+  total     Int
+  passed    Boolean
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dot       Dot      @relation(fields: [dotId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dotId])
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Payments & access
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum Scope {
+  PLAN
+  PATH
+  DOT
+  PROJECT
+}
+
+enum EntitlementSource {
+  SUBSCRIPTION
+  ONE_TIME
+  ADMIN_GRANT
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  CREATED
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model Plan {
+  id             String          @id @default(cuid())
+  name           String
+  interval       BillingInterval @unique
+  priceInr       Int
+  razorpayPlanId String?
+  isActive       Boolean         @default(true)
+  subscriptions  Subscription[]
+}
+
+model Price {
+  id        String  @id @default(cuid())
+  scope     Scope
+  scopeId   String?
+  amountInr Int
+  isActive  Boolean @default(true)
+  orders    Order[]
+
+  @@unique([scope, scopeId])
+}
+
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  discountPct Int
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  expiresAt   DateTime?
+  scope       Scope?
+  scopeId     String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  orders      Order[]
+}
+
+model Order {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  priceId           String?
+  price             Price?           @relation(fields: [priceId], references: [id])
+  scope             Scope
+  scopeId           String?
+  amountInr         Int
+  couponId          String?
+  coupon            Coupon?          @relation(fields: [couponId], references: [id])
+  status            OrderStatus      @default(PENDING)
+  razorpayOrderId   String?          @unique
+  razorpayPaymentId String?
+  isSimulated       Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  entitlements      Entitlement[]
+  invoice           Invoice?
+  projectPurchase   ProjectPurchase?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Subscription {
+  id            String             @id @default(cuid())
+  userId        String
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          Plan               @relation(fields: [planId], references: [id])
+  razorpaySubId String?            @unique
+  status        SubscriptionStatus @default(CREATED)
+  validUntil    DateTime?
+  cancelAtEnd   Boolean            @default(false)
+  isSimulated   Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  entitlements  Entitlement[]
+  invoices      Invoice[]
+
+  @@index([userId])
+}
+
+model Entitlement {
+  id             String            @id @default(cuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope          Scope
+  scopeId        String?
+  source         EntitlementSource
+  validFrom      DateTime          @default(now())
+  validUntil     DateTime?
+  orderId        String?
+  order          Order?            @relation(fields: [orderId], references: [id])
+  subscriptionId String?
+  subscription   Subscription?     @relation(fields: [subscriptionId], references: [id])
+  revokedAt      DateTime?
+  note           String?
+  createdAt      DateTime          @default(now())
+
+  @@index([userId, scope])
+}
+
+enum InvoiceKind {
+  BILL_OF_SUPPLY
+  TAX_INVOICE
+}
+
+enum InvoiceStatus {
+  PAID
+  REFUNDED
+}
+
+/// One invoice per successful payment (one-off order or subscription charge).
+model Invoice {
+  id                String        @id @default(cuid())
+  number            String        @unique
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId           String?       @unique
+  order             Order?        @relation(fields: [orderId], references: [id])
+  subscriptionId    String?
+  subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
+  razorpayPaymentId String?       @unique
+  kind              InvoiceKind   @default(BILL_OF_SUPPLY)
+  status            InvoiceStatus @default(PAID)
+  description       String
+  billingName       String
+  billingEmail      String
+  subtotalInr       Int
+  discountInr       Int           @default(0)
+  taxInr            Int           @default(0)
+  totalInr          Int
+  sellerGstin       String?
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  isSimulated       Boolean       @default(false)
+  issuedAt          DateTime      @default(now())
+
+  @@index([userId, issuedAt])
+}
+
+/// Sequential invoice numbers per Indian financial year (e.g. "2026-27").
+model InvoiceCounter {
+  financialYear String @id
+  last          Int    @default(0)
+}
+
+/// Every Razorpay webhook we receive, for idempotency and debugging.
+model PaymentEvent {
+  id         String   @id @default(cuid())
+  eventId    String   @unique
+  event      String
+  payload    Json
+  receivedAt DateTime @default(now())
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Content
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+enum Difficulty {
+  FOUNDATIONAL
+  ASSOCIATE
+  PROFESSIONAL
+  EXPERT
+}
+
+model CertificationGuide {
+  id          String                  @id @default(cuid())
+  slug        String                  @unique
+  name        String
+  provider    String
+  domainTags  String[]
+  overview    String
+  examFormat  String
+  difficulty  Difficulty
+  prepTime    String
+  officialUrl String
+  topics      String[]
+  pathSlugs   String[]
+  isPublished Boolean                 @default(true)
+  isSample    Boolean                 @default(false)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  resources   CertificationResource[]
+}
+
+model CertificationResource {
+  certificationId String
+  resourceId      String
+  order           Int
+  certification   CertificationGuide @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  resource        Resource           @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@id([certificationId, resourceId])
+}
+
+enum ExperienceLevel {
+  INTERNSHIP
+  ENTRY
+  MID
+  SENIOR
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+model JobListing {
+  id          String          @id @default(cuid())
+  title       String
+  company     String
+  location    String
+  workMode    WorkMode
+  level       ExperienceLevel
+  domainTags  String[]
+  pathSlugs   String[]
+  url         String
+  salary      String?
+  description String?
+  postedAt    DateTime        @default(now())
+  expiresAt   DateTime?
+  isPublished Boolean         @default(true)
+  isSample    Boolean         @default(false)
+  /// "manual" or an import provider such as "adzuna", "remotive", "jooble"
+  source      String          @default("manual")
+  externalId  String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  saves       SavedJob[]
+
+  @@unique([source, externalId])
+  @@index([isPublished, postedAt])
+}
+
+model SavedJob {
+  userId    String
+  jobId     String
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       JobListing @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@id([userId, jobId])
+}
+
+model TechUpdate {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String
+  body        String
+  domainTags  String[]
+  readMinutes Int       @default(4)
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  isSample    Boolean   @default(false)
+  /// "manual" or an import provider such as "devto", "hackernews", "rss"
+  source      String    @default("manual")
+  externalId  String?
+  sourceName  String?
+  sourceUrl   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([source, externalId])
+  @@index([isPublished, publishedAt])
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Tools
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+model Resume {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template  String   @default("classic")
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model MarketplaceWaitlist {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interest  String?
+  createdAt DateTime @default(now())
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Project marketplace
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+enum ProjectStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum ProjectFileKind {
+  COVER
+  SCREENSHOT
+  SOURCE
+}
+
+enum PurchaseStatus {
+  PAID
+  DISPUTED
+  REFUNDED
+}
+
+enum PayoutMethod {
+  UPI
+  BANK
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum DisputeStatus {
+  OPEN
+  REFUNDED
+  REJECTED
+}
+
+model SellerProfile {
+  userId           String       @id
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName      String
+  bio              String?
+  payoutMethod     PayoutMethod
+  payoutName       String
+  /// AES-256-GCM encrypted JSON: { upiId } or { accountNumber, ifsc }
+  payoutDetailsEnc String
+  /// Masked hint shown in the UI, e.g. "UPI ••••@okaxis" or "A/c ••••4321"
+  payoutHint       String
+  termsAcceptedAt  DateTime
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Project {
+  id              String            @id @default(cuid())
+  slug            String            @unique
+  sellerId        String
+  seller          User              @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  title           String
+  summary         String
+  description     String
+  domainTags      String[]
+  techStack       String[]
+  level           Level             @default(BEGINNER)
+  priceInr        Int
+  demoUrl         String?
+  status          ProjectStatus     @default(DRAFT)
+  rejectionReason String?
+  salesCount      Int               @default(0)
+  ratingAvg       Float             @default(0)
+  ratingCount     Int               @default(0)
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  files           ProjectFile[]
+  purchases       ProjectPurchase[]
+  reviews         ProjectReview[]
+
+  @@index([status])
+  @@index([sellerId])
+}
+
+model ProjectFile {
+  id        String          @id @default(cuid())
+  projectId String
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind      ProjectFileKind
+  key       String          @unique
+  name      String
+  mime      String
+  size      Int
+  order     Int             @default(0)
+  createdAt DateTime        @default(now())
+
+  @@index([projectId, kind])
+}
+
+model ProjectPurchase {
+  id               String          @id @default(cuid())
+  projectId        String
+  project          Project         @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  buyerId          String
+  buyer            User            @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  orderId          String          @unique
+  order            Order           @relation(fields: [orderId], references: [id])
+  amountInr        Int
+  commissionInr    Int
+  sellerEarningInr Int
+  status           PurchaseStatus  @default(PAID)
+  payoutId         String?
+  payout           Payout?         @relation(fields: [payoutId], references: [id])
+  createdAt        DateTime        @default(now())
+  dispute          ProjectDispute?
+
+  @@unique([projectId, buyerId])
+  @@index([payoutId])
+}
+
+model ProjectReview {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  buyerId   String
+  buyer     User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  rating    Int
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, buyerId])
+}
+
+model ProjectDispute {
+  id         String          @id @default(cuid())
+  purchaseId String          @unique
+  purchase   ProjectPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  reason     String
+  details    String
+  status     DisputeStatus   @default(OPEN)
+  resolution String?
+  createdAt  DateTime        @default(now())
+  resolvedAt DateTime?
+}
+
+model Payout {
+  id        String            @id @default(cuid())
+  sellerId  String
+  seller    User              @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  amountInr Int
+  method    PayoutMethod
+  status    PayoutStatus      @default(PENDING)
+  reference String?
+  note      String?
+  paidAt    DateTime?
+  createdAt DateTime          @default(now())
+  purchases ProjectPurchase[]
+
+  @@index([sellerId, status])
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Support
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+enum MessageStatus {
+  NEW
+  REPLIED
+  CLOSED
+  SPAM
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  topic     String
+  message   String
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status    MessageStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+/**
+ * --------------------------------------------------------------------------
+ */
+/**
+ * Admin
+ */
+/**
+ * --------------------------------------------------------------------------
+ */
+
+/// Admin-editable settings (business details, import sources, marketplace rules).
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  actor      User     @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+  action     String
+  targetType String
+  targetId   String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "prisma migrate deploy && next build",
+  "crons": [
+    { "path": "/api/cron/import-updates", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/import-jobs", "schedule": "30 1 * * *" },
+    { "path": "/api/cron/maintenance", "schedule": "0 22 * * *" }
+  ]
+}
