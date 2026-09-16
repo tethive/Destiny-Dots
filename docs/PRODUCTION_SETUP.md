@@ -27,7 +27,7 @@ Keep a copy in a password manager — never paste secrets into chats, email or G
 
 ## 0. Domain, GitHub and Vercel
 
-1. **Buy a domain** (e.g. `destinydots.in`) from Cloudflare Registrar, GoDaddy, Hostinger or Namecheap.
+1. **Buy a domain** (e.g. `destinydots.com`) from Cloudflare Registrar, GoDaddy, Hostinger or Namecheap.
    Tip: Cloudflare Registrar sells at cost and makes §3–§5 easier because DNS is in the same dashboard.
 2. **Put the code on GitHub:** create a *private* repository at <https://github.com/new>, then in the project folder:
    ```bash
@@ -42,12 +42,12 @@ Keep a copy in a password manager — never paste secrets into chats, email or G
 3. **Create the Vercel project:** <https://vercel.com/signup> → *Continue with GitHub* → **Add New… → Project** → import the repository.
    Leave the build settings as detected (the repo's `vercel.json` runs database migrations before each build). **Don't deploy yet** — click
    *Environment Variables* first and add the keys from the sections below, or deploy once and redeploy after adding them.
-4. **Connect the domain:** Vercel project → **Settings → Domains** → add `destinydots.in` and `www.destinydots.in`, then add the DNS records
+4. **Connect the domain:** Vercel project → **Settings → Domains** → add `destinydots.com` and `www.destinydots.com`, then add the DNS records
    Vercel shows at your registrar. HTTPS certificates are issued automatically.
 5. Set the site URLs (use your real domain, `https`, no trailing slash):
    ```
-   BETTER_AUTH_URL=https://destinydots.in
-   NEXT_PUBLIC_SITE_URL=https://destinydots.in
+   BETTER_AUTH_URL=https://destinydots.com
+   NEXT_PUBLIC_SITE_URL=https://destinydots.com
    BETTER_AUTH_SECRET=<run: npm run gen:secret>
    ADMIN_EMAILS=info.destinydots@gmail.com
    ```
@@ -92,7 +92,7 @@ Keep a copy in a password manager — never paste secrets into chats, email or G
 2. The dashboard opens in **Test Mode** (toggle at the top). Go to **Account & Settings → API Keys → Generate Key**.
 3. Copy the **Key ID** (`rzp_test_…`) and **Key Secret** (shown only once — download the file).
 4. **Webhook:** **Account & Settings → Webhooks → + Add New Webhook**
-   - Webhook URL: `https://destinydots.in/api/webhooks/razorpay`
+   - Webhook URL: `https://destinydots.com/api/webhooks/razorpay`
    - Secret: create a long random string (`npm run gen:secret`) and keep it
    - Alert email: `info.destinydots@gmail.com`
    - Active events — tick exactly these:
@@ -124,15 +124,15 @@ Keep a copy in a password manager — never paste secrets into chats, email or G
 ## 3. Email — Resend
 
 1. Sign up at <https://resend.com>.
-2. **Domains → Add Domain** → enter `destinydots.in` (or a subdomain like `mail.destinydots.in`), region **Tokyo (ap-northeast-1)**.
+2. **Domains → Add Domain** → enter `destinydots.com` (or a subdomain like `mail.destinydots.com`), region **Tokyo (ap-northeast-1)**.
 3. Resend shows DNS records (MX, TXT/SPF and DKIM). Add each one at your DNS provider exactly as shown, then click **Verify**.
    On Cloudflare DNS, set the records to **DNS only** (grey cloud). Verification usually takes minutes.
 4. Recommended: also add a DMARC record — TXT on `_dmarc` with value `v=DMARC1; p=none; rua=mailto:info.destinydots@gmail.com`.
-5. **API Keys → Create API Key** → permission *Sending access*, domain `destinydots.in`. Copy the key (`re_…`).
+5. **API Keys → Create API Key** → permission *Sending access*, domain `destinydots.com`. Copy the key (`re_…`).
 6. Add to Vercel:
    ```
    RESEND_API_KEY=re_...
-   EMAIL_FROM=Destiny Dots <noreply@destinydots.in>
+   EMAIL_FROM=Destiny Dots <noreply@destinydots.com>
    CONTACT_INBOX=info.destinydots@gmail.com
    ```
 7. What gets sent: email verification, welcome, password reset, password changed, contact form (to you with *reply-to* the sender, plus a
@@ -148,7 +148,7 @@ Keep a copy in a password manager — never paste secrets into chats, email or G
 1. Sign up / log in at <https://dash.cloudflare.com> (a Cloudflare account is free; your domain doesn't need to be on Cloudflare).
 2. Left menu **Turnstile → Add widget**.
    - Widget name: `Destiny Dots`
-   - Hostnames: `destinydots.in`, `www.destinydots.in` (add `localhost` if you want to test locally)
+   - Hostnames: `destinydots.com`, `www.destinydots.com` (add `localhost` if you want to test locally)
    - Widget mode: **Managed**
 3. Copy the **Site Key** and **Secret Key**.
 4. Add to Vercel:
@@ -171,7 +171,7 @@ access before serving anything.
    ```json
    [
      {
-       "AllowedOrigins": ["https://destinydots.in", "https://www.destinydots.in"],
+       "AllowedOrigins": ["https://destinydots.com", "https://www.destinydots.com"],
        "AllowedMethods": ["PUT", "GET", "HEAD"],
        "AllowedHeaders": ["Content-Type"],
        "MaxAgeSeconds": 3600
@@ -215,13 +215,13 @@ Store `ENCRYPTION_KEY` in your password manager: if it's lost, saved payout deta
 2. **APIs & Services → OAuth consent screen** → *Get started*
    - App name `Destiny Dots`, support email `info.destinydots@gmail.com`
    - Audience **External**, contact email, agree → Create
-   - **Branding:** add the logo, home page `https://destinydots.in`, privacy `https://destinydots.in/privacy`, terms `https://destinydots.in/terms`,
-     authorised domain `destinydots.in`
+   - **Branding:** add the logo, home page `https://destinydots.com`, privacy `https://destinydots.com/privacy`, terms `https://destinydots.com/terms`,
+     authorised domain `destinydots.com`
    - **Audience → Publish app** (so anyone can sign in — basic email/profile scopes don't need Google's review)
 3. **APIs & Services → Credentials → + Create credentials → OAuth client ID**
    - Application type **Web application**, name `Destiny Dots web`
-   - Authorised JavaScript origins: `https://destinydots.in`
-   - Authorised redirect URIs: `https://destinydots.in/api/auth/callback/google`
+   - Authorised JavaScript origins: `https://destinydots.com`
+   - Authorised redirect URIs: `https://destinydots.com/api/auth/callback/google`
      (for local testing also add `http://localhost:3000` and `http://localhost:3000/api/auth/callback/google`)
 4. Copy the Client ID and Client secret:
    ```
@@ -277,7 +277,7 @@ you on the right side of publishers' copyright.
 8. Marketplace:
    - [ ] Review marketplace rules in Admin → Marketplace → Settings (10% commission, 7-day protection, ₹500 minimum payout)
    - [ ] Payouts are manual: Admin → Marketplace → Payouts → *Prepare payout* → pay via your bank/UPI app → *Mark paid* with the UTR
-9. Monitoring (recommended): enable **Vercel Analytics** and add an uptime monitor (e.g. UptimeRobot, free) for `https://destinydots.in`.
+9. Monitoring (recommended): enable **Vercel Analytics** and add an uptime monitor (e.g. UptimeRobot, free) for `https://destinydots.com`.
 10. Backups: Neon keeps point-in-time history (24 hours free, longer on paid plans). Consider upgrading before you have many paying users.
 
 ### Where each thing is configured

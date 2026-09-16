@@ -16,7 +16,7 @@ import { getSetting } from "@/server/settings";
 
 export type ImportReport = { source: string; fetched: number; created: number; error?: string };
 
-const USER_AGENT = "DestinyDotsBot/1.0 (+https://destinydots.in; info.destinydots@gmail.com)";
+const USER_AGENT = "DestinyDotsBot/1.0 (+https://destinydots.com; info.destinydots@gmail.com)";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                     */

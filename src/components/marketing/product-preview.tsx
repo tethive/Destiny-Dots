@@ -37,7 +37,7 @@ export function ProductPreview({ path, domainName }: { path: CareerPath; domainN
             <span className="size-2.5 rounded-full bg-green-400/80" />
           </span>
           <span className="mx-auto hidden rounded-md border bg-muted/60 px-3 py-0.5 font-mono text-[11px] text-muted-foreground sm:block">
-            destinydots.in/resources/{path.domainTag}/{path.slug}
+            destinydots.com/resources/{path.domainTag}/{path.slug}
           </span>
         </div>
         <div className="rounded-xl border bg-background p-4 sm:p-6">

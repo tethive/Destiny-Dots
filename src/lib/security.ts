@@ -161,7 +161,7 @@ export async function safeFetch(url: string, init: RequestInit & { timeoutMs?: n
       ...init,
       redirect: "manual",
       signal: AbortSignal.timeout(init.timeoutMs ?? 8000),
-      headers: { "User-Agent": "DestinyDotsBot/1.0 (+https://destinydots.in)", ...init.headers },
+      headers: { "User-Agent": "DestinyDotsBot/1.0 (+https://destinydots.com)", ...init.headers },
     });
     const location = res.headers.get("location");
     if (res.status >= 300 && res.status < 400 && location) {
