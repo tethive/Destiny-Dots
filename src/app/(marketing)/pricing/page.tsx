@@ -7,7 +7,7 @@ import { PricingPlans } from "@/components/marketing/pricing-plans";
 import { PageHero, SectionHeading } from "@/components/marketing/section";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { formatINR, pricing } from "@/lib/pricing";
-import { displayPrices } from "@/server/payments";
+import { displayPrices, paymentsAvailable } from "@/server/payments";
 
 export async function generateMetadata(): Promise<Metadata> {
   const prices = await displayPrices();
@@ -47,6 +47,11 @@ export default async function PricingPage() {
 
       <section className="relative -mt-px pb-20 pt-16 sm:pb-24">
         <div className="container-page">
+          {!paymentsAvailable && (
+            <p className="mx-auto mb-8 max-w-2xl rounded-xl border border-primary/20 bg-accent px-4 py-3 text-center text-sm text-accent-foreground">
+              <b>Paid plans open soon.</b> Create a free account today — the first dots of every path are free, and we&apos;ll let you know when Pro launches.
+            </p>
+          )}
           <Reveal>
             <PricingPlans prices={prices} />
           </Reveal>

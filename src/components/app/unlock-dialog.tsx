@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, LoaderCircle, ShieldCheck, TicketPercent } from "lucide-react";
-import { useCheckout } from "@/components/app/checkout";
+import { PaymentsSoonNotice, useCheckout } from "@/components/app/checkout";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,8 @@ export function UnlockDialog({
   ownedDots: number;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { start, busy } = useCheckout();
+  const { start, busy: checkoutBusy, available } = useCheckout();
+  const busy = checkoutBusy || !available;
   const [interval, setInterval] = useState<"MONTHLY" | "YEARLY">("YEARLY");
   const [coupon, setCoupon] = useState("");
   const [showCoupon, setShowCoupon] = useState(false);
@@ -52,6 +53,7 @@ export function UnlockDialog({
     >
       {target && (
         <div className="space-y-3">
+          {!available && <PaymentsSoonNotice />}
           {ownedDots >= 2 && (
             <p className="rounded-lg bg-accent px-3 py-2 text-sm text-accent-foreground">
               You&apos;ve unlocked {ownedDots} dots already — Pro gives you every dot for {formatINR(prices.monthly)}/month.

@@ -14,7 +14,7 @@ Keep a copy in a password manager — never paste secrets into chats, email or G
 |---|---|---|---|
 | 0 | Domain + GitHub + Vercel | Hosting | Domain ≈ ₹800/yr, Vercel Hobby free |
 | 1 | Neon | Database | Free (0.5 GB) |
-| 2 | Razorpay | Payments, subscriptions, refunds | 2% per transaction |
+| 2 | Razorpay (optional at launch) | Payments, subscriptions, refunds | 2% per transaction |
 | 3 | Resend | All emails | Free (3,000/month) |
 | 4 | Cloudflare Turnstile | Bot protection | Free |
 | 5 | Cloudflare R2 | PDFs, videos, marketplace files | Free (10 GB) |
@@ -83,6 +83,9 @@ Keep a copy in a password manager — never paste secrets into chats, email or G
 ---
 
 ## 2. Payments — Razorpay
+
+> **Optional at launch.** Without Razorpay keys the site runs normally and every purchase button shows
+> "Payments are opening soon". Add all three keys together when you are ready — a partial setup is rejected at startup.
 
 ### 2a. Account and test keys (do this first)
 1. Sign up at <https://dashboard.razorpay.com/signup> with the business email and phone.

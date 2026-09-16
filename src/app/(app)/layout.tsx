@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { AppShell } from "@/components/app/app-shell";
 import { CheckoutProvider } from "@/components/app/checkout";
+import { paymentsAvailable } from "@/server/payments";
 import { CommandMenuProvider } from "@/components/command-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { requireUser, touchActivity } from "@/lib/session";
@@ -19,7 +20,7 @@ export default async function StudentLayout({ children }: LayoutProps<"/">) {
         defaultOpen={cookieStore.get("sidebar_state")?.value !== "false"}
         user={{ name: user.name, email: user.email, image: user.image, role: user.role, isPro: access.plan }}
       >
-        <CheckoutProvider user={{ name: user.name, email: user.email }}>{children}</CheckoutProvider>
+        <CheckoutProvider user={{ name: user.name, email: user.email }} available={paymentsAvailable}>{children}</CheckoutProvider>
       </AppShell>
       <Toaster richColors closeButton position="top-center" />
     </CommandMenuProvider>

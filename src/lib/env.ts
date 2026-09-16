@@ -65,9 +65,6 @@ type Env = z.infer<typeof schema>;
 
 /** Keys that must be present before the site can take real users and money. */
 const requiredInProduction: (keyof Env)[] = [
-  "RAZORPAY_KEY_ID",
-  "RAZORPAY_KEY_SECRET",
-  "RAZORPAY_WEBHOOK_SECRET",
   "RESEND_API_KEY",
   "EMAIL_FROM",
   "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
@@ -95,8 +92,11 @@ export const isProduction = env.NODE_ENV === "production";
 /** Throws with the full list of missing production keys. Called from instrumentation. */
 export function assertProductionEnv() {
   if (!isProduction || process.env.SKIP_ENV_CHECK === "1") return;
-  const missing = requiredInProduction.filter((k) => !env[k]);
-  if (env.BETTER_AUTH_URL.startsWith("http://")) missing.push("BETTER_AUTH_URL (must be https)" as keyof Env);
+  const missing: string[] = requiredInProduction.filter((k) => !env[k]);
+  // Payments are optional (the site shows "payments opening soon"), but a partial Razorpay setup is a mistake.
+  const razorpayKeys = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"] as const;
+  if (razorpayKeys.some((k) => env[k])) missing.push(...razorpayKeys.filter((k) => !env[k]));
+  if (env.BETTER_AUTH_URL.startsWith("http://")) missing.push("BETTER_AUTH_URL (must be https)");
   if (!process.env.NEXT_PUBLIC_SITE_URL) console.warn("[env] NEXT_PUBLIC_SITE_URL is not set — using the Vercel deployment URL. Set it to your own domain before launch.");
   if (missing.length) {
     throw new Error(`Missing production configuration — see docs/PRODUCTION_SETUP.md:\n  - ${missing.join("\n  - ")}`);

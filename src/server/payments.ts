@@ -32,6 +32,9 @@ export const subscriptionsEnabled = razorpayEnabled;
  */
 export const simulatorEnabled = !isProduction && !razorpayEnabled;
 
+/** False in production until Razorpay keys are added — purchase buttons show "Payments opening soon". */
+export const paymentsAvailable = razorpayEnabled || simulatorEnabled;
+
 /** Fulfilment touches several tables; give slow networks more than the 5s default. */
 const txOptions = { maxWait: 10_000, timeout: 20_000 };
 

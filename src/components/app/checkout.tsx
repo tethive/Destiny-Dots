@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FlaskConical, LoaderCircle, ShieldCheck } from "lucide-react";
+import { Clock, FlaskConical, LoaderCircle, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,9 @@ import { checkPaymentStatus, simulatePayment } from "@/server/actions/student";
 import type { CheckoutSession } from "@/server/payments";
 
 type StartFn = () => Promise<CheckoutSession | { error: string }>;
-type Ctx = { start: (fn: StartFn) => Promise<void>; busy: boolean };
+type Ctx = { start: (fn: StartFn) => Promise<void>; busy: boolean; available: boolean };
 
-const CheckoutContext = createContext<Ctx>({ start: async () => {}, busy: false });
+const CheckoutContext = createContext<Ctx>({ start: async () => {}, busy: false, available: false });
 export const useCheckout = () => useContext(CheckoutContext);
 
 declare global {
@@ -37,7 +37,19 @@ function loadRazorpay() {
  * Opens Razorpay Checkout (or the local simulator) and then waits for the
  * server-side webhook to confirm. The browser callback never grants access.
  */
-export function CheckoutProvider({ user, children }: { user: { name: string; email: string }; children: React.ReactNode }) {
+/** Shown wherever a purchase would start while payments aren't switched on yet. */
+export function PaymentsSoonNotice({ className }: { className?: string }) {
+  return (
+    <p className={`flex items-start gap-2 rounded-xl border border-primary/20 bg-accent px-3 py-2.5 text-sm text-accent-foreground ${className ?? ""}`}>
+      <Clock className="mt-0.5 size-4 shrink-0" />
+      <span>
+        <b>Payments are opening soon.</b> Everything free is available now — we&apos;ll email you when Pro and unlocks go live.
+      </span>
+    </p>
+  );
+}
+
+export function CheckoutProvider({ user, available, children }: { user: { name: string; email: string }; available: boolean; children: React.ReactNode }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [sim, setSim] = useState<Extract<CheckoutSession, { mode: "simulator" }> | null>(null);
@@ -71,6 +83,7 @@ export function CheckoutProvider({ user, children }: { user: { name: string; ema
 
   const start = useCallback(
     async (fn: StartFn) => {
+      if (!available) return void toast.info("Payments are opening soon — thanks for your patience!");
       setBusy(true);
       try {
         const session = await fn();
@@ -101,11 +114,11 @@ export function CheckoutProvider({ user, children }: { user: { name: string; ema
         setBusy(false);
       }
     },
-    [user, waitForConfirmation],
+    [user, waitForConfirmation, available],
   );
 
   return (
-    <CheckoutContext.Provider value={{ start, busy }}>
+    <CheckoutContext.Provider value={{ start, busy, available }}>
       {children}
 
       <ResponsiveModal

@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useCheckout } from "@/components/app/checkout";
+import { PaymentsSoonNotice, useCheckout } from "@/components/app/checkout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +21,8 @@ import { formatINR } from "@/lib/pricing";
 import { cancelMySubscription, startSubscription } from "@/server/actions/student";
 
 export function SubscribeButtons({ prices }: { prices: { monthly: number; yearly: number } }) {
-  const { start, busy } = useCheckout();
+  const { start, busy, available } = useCheckout();
+  if (!available) return <PaymentsSoonNotice />;
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
       <Button size="lg" className="h-10 rounded-full px-5 shadow-lg shadow-primary/20" disabled={busy} onClick={() => start(() => startSubscription("YEARLY"))}>
