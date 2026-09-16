@@ -1,9 +1,16 @@
+/**
+ * Public site URL. Set NEXT_PUBLIC_SITE_URL to your real domain; on Vercel we fall
+ * back to the deployment URL so a preview or first deploy still builds.
+ */
+const vercelHost = process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL || process.env.NEXT_PUBLIC_VERCEL_URL;
+export const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || (vercelHost ? `https://${vercelHost}` : "http://localhost:3000")).replace(/\/$/, "");
+
 export const siteConfig = {
   name: "Destiny Dots",
   tagline: "Find your path. Connect the dots.",
   description:
     "Structured career roadmaps with hand-picked resources for Cybersecurity, Ethical Hacking, AI/ML, Cloud, Data, Blockchain, Full Stack, IoT, 5G and AR/VR.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: siteUrl,
   legalEntity: "Destiny Dots",
 };
 

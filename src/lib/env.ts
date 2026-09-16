@@ -12,12 +12,23 @@ const optional = z
   .optional()
   .transform((v) => (v ? v : undefined));
 
+/** Vercel injects these; they let the first deploy work before a domain is set. */
+const vercelHost =
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+  process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ||
+  process.env.VERCEL_URL ||
+  process.env.NEXT_PUBLIC_VERCEL_URL;
+const inferredSiteUrl = vercelHost ? `https://${vercelHost}` : "http://localhost:3000";
+
+/** A URL that falls back to the deployment URL when the variable is empty or unset. */
+const siteUrlField = z.preprocess((v) => (typeof v === "string" && v.trim() ? v.trim().replace(/\/$/, "") : inferredSiteUrl), z.url());
+
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().min(1),
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
-  BETTER_AUTH_URL: z.url(),
-  NEXT_PUBLIC_SITE_URL: z.url(),
+  BETTER_AUTH_URL: siteUrlField,
+  NEXT_PUBLIC_SITE_URL: siteUrlField,
   ADMIN_EMAILS: z.string().default(""),
 
   GOOGLE_CLIENT_ID: optional,
@@ -86,6 +97,7 @@ export function assertProductionEnv() {
   if (!isProduction || process.env.SKIP_ENV_CHECK === "1") return;
   const missing = requiredInProduction.filter((k) => !env[k]);
   if (env.BETTER_AUTH_URL.startsWith("http://")) missing.push("BETTER_AUTH_URL (must be https)" as keyof Env);
+  if (!process.env.NEXT_PUBLIC_SITE_URL) console.warn("[env] NEXT_PUBLIC_SITE_URL is not set — using the Vercel deployment URL. Set it to your own domain before launch.");
   if (missing.length) {
     throw new Error(`Missing production configuration — see docs/PRODUCTION_SETUP.md:\n  - ${missing.join("\n  - ")}`);
   }
