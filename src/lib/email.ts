@@ -45,7 +45,7 @@ function renderHtml(c: EmailContent) {
   return `<!doctype html><html><body style="margin:0;background:#f4f3f8;padding:24px 12px">
   <span style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(c.preheader)}</span>
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
-    <p style="margin:0;font-weight:700;font-size:16px;color:#1c1830"><span style="color:${brand}">●</span> ${escapeHtml(siteConfig.name)}</p>
+    <p style="margin:0;font-weight:700;font-size:16px;color:#1c1830"><img src="${new URL("/brand/logo-mark.png", siteConfig.url).toString()}" width="32" height="32" alt="" style="vertical-align:middle;margin-right:8px;border:0">${escapeHtml(siteConfig.name)}</p>
     <h1 style="font-size:22px;line-height:1.3;margin:24px 0 14px;color:#1c1830">${escapeHtml(c.heading)}</h1>
     ${c.paragraphs.map(p).join("")}
     ${quote}${details}${action}

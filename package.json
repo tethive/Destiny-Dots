@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
     "db:dev": "prisma dev -d --name destiny-dots",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronsUpDown, LogOut, Search, Settings, Shield, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { brandImages } from "@/components/brand/logo";
 import { useCommandMenu } from "@/components/command-menu";
 import { ThemeSegmented, ThemeToggle } from "@/components/theme/theme-toggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,7 +65,7 @@ export function AppShell({
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
                 <Link href={area === "admin" ? "/admin" : "/dashboard"}>
-                  <Image src="/logo-mark.png" alt="" width={28} height={28} className="size-7 shrink-0" />
+                  <Image src={brandImages.mark} alt="" width={32} height={32} className="size-8 shrink-0" />
                   <span className="grid leading-tight">
                     <span className="truncate font-semibold">Destiny Dots</span>
                     <span className="truncate text-xs text-muted-foreground">{area === "admin" ? "Admin panel" : "Student"}</span>

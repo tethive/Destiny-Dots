@@ -23,6 +23,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // The invoice PDF embeds the logo from disk.
+  outputFileTracingIncludes: { "/api/invoices/[number]/pdf": ["./public/brand/logo-mark.png"] },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

@@ -28,6 +28,13 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     title: `${siteConfig.name} — ${siteConfig.tagline}`,
     description: siteConfig.description,
+    images: [{ url: "/brand/logo-badge.png", width: 512, height: 512, alt: siteConfig.name }],
+  },
+  twitter: {
+    card: "summary",
+    title: `${siteConfig.name} — ${siteConfig.tagline}`,
+    description: siteConfig.description,
+    images: ["/brand/logo-badge.png"],
   },
 };
 

@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { InvoiceDocument } from "@/components/invoice/invoice-pdf";
@@ -13,7 +15,8 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/invoices/[n
   const invoice = await getInvoiceView(number, session.user);
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const pdf = await renderToBuffer(<InvoiceDocument invoice={invoice} />);
+  const logo = await readFile(path.join(process.cwd(), "public/brand/logo-mark.png")).catch(() => undefined);
+  const pdf = await renderToBuffer(<InvoiceDocument invoice={invoice} logo={logo} />);
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",

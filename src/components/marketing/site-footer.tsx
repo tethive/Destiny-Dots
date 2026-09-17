@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
+import { LogoBadge } from "@/components/brand/logo";
 import { SocialLinks } from "@/components/marketing/social-links";
 import { ThemeSegmented } from "@/components/theme/theme-toggle";
 import { contactConfig, footerNav, siteConfig } from "@/lib/site";
@@ -9,7 +9,10 @@ export function SiteFooter() {
     <footer className="border-t bg-muted/30 pb-24 lg:pb-0">
       <div className="container-page grid gap-12 py-14 lg:grid-cols-[1.2fr_2fr]">
         <div className="max-w-xs">
-          <Logo />
+          <Link href="/" aria-label="Destiny Dots home" className="inline-flex items-center gap-3 rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+            <LogoBadge size={72} />
+            <span className="text-lg font-semibold tracking-tight">Destiny Dots</span>
+          </Link>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
             Structured career roadmaps with hand-picked resources — one dot at a time.
           </p>

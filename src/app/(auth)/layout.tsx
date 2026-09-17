@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Award, Check, Lock } from "lucide-react";
-import { Logo } from "@/components/brand/logo";
+import { Logo, LogoBadge } from "@/components/brand/logo";
 import { DomainBadge } from "@/components/domain";
 import { GridBackdrop } from "@/components/effects/orbit";
 import { ProgressRing } from "@/components/progress-ring";
@@ -56,8 +56,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <GridBackdrop />
 
         <div>
-          <p className="eyebrow">Destiny Dots</p>
-          <h2 className="mt-4 max-w-md text-4xl leading-[1.1] font-semibold tracking-[-0.03em] text-balance">
+          <LogoBadge size={88} priority />
+          <h2 className="mt-6 max-w-md text-4xl leading-[1.1] font-semibold tracking-[-0.03em] text-balance">
             Every career is a series of dots. <span className="text-brand-gradient">Let&apos;s connect yours.</span>
           </h2>
         </div>

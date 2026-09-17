@@ -1,4 +1,4 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Image as PdfImage, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 export type InvoiceView = {
   number: string;
@@ -32,6 +32,8 @@ const s = StyleSheet.create({
   page: { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: ink, lineHeight: 1.45 },
   row: { flexDirection: "row", justifyContent: "space-between" },
   brand: { fontSize: 16, fontFamily: "Helvetica-Bold" },
+  brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 2 },
+  logo: { width: 28, height: 28, marginRight: 8 },
   accent: { color: "#5b3fd6" },
   title: { fontSize: 20, fontFamily: "Helvetica-Bold", textAlign: "right" },
   muted: { color: muted },
@@ -49,17 +51,17 @@ const s = StyleSheet.create({
   footer: { position: "absolute", bottom: 24, left: 40, right: 40, fontSize: 7.5, color: "#a19db3", textAlign: "center" },
 });
 
-export function InvoiceDocument({ invoice: i }: { invoice: InvoiceView }) {
+export function InvoiceDocument({ invoice: i, logo }: { invoice: InvoiceView; logo?: Buffer }) {
   const heading = i.kind === "TAX_INVOICE" ? "Tax Invoice" : "Bill of Supply";
   return (
     <Document title={`${heading} ${i.number}`} author={i.business.legalName}>
       <Page size="A4" style={s.page}>
         <View style={s.row}>
           <View>
-            <Text style={s.brand}>
-              <Text style={s.accent}>● </Text>
-              {i.business.legalName}
-            </Text>
+            <View style={s.brandRow}>
+              {logo ? <PdfImage src={{ data: logo, format: "png" }} style={s.logo} /> : <Text style={s.accent}>● </Text>}
+              <Text style={s.brand}>{i.business.legalName}</Text>
+            </View>
             <Text style={s.muted}>{i.business.address}</Text>
             <Text style={s.muted}>
               {i.business.email} · {i.business.phone}
