@@ -27,6 +27,7 @@ export type BrowseFilter = { q?: string; domain?: string; level?: Level; sort?: 
 export async function browseProjects(f: BrowseFilter) {
   const where: Prisma.ProjectWhereInput = {
     status: "APPROVED",
+    seller: { deactivatedAt: null },
     ...(f.domain ? { domainTags: { has: f.domain } } : {}),
     ...(f.level ? { level: f.level } : {}),
     ...(f.q

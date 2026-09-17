@@ -3,11 +3,13 @@ import Link from "next/link";
 import { Send } from "lucide-react";
 import { StatusScreen } from "@/components/status/status-screen";
 import { Button } from "@/components/ui/button";
+import { requireFlash } from "@/lib/flash";
 import { contactConfig } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Message sent", robots: { index: false } };
 
-export default function MessageSentPage() {
+export default async function MessageSentPage() {
+  await requireFlash("message-sent", "/contact");
   return (
     <StatusScreen
       tone="success"

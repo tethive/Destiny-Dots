@@ -39,6 +39,29 @@ export async function trackUsage(provider: UsageProvider, metric: string, amount
   }
 }
 
+/**
+ * Stores the latest value of an account-wide counter reported by the provider
+ * itself (e.g. Resend's quota headers), so usage outside the app is included.
+ */
+export async function recordUsageSnapshot(provider: UsageProvider, metric: string, value: number, day: Date) {
+  if (!Number.isFinite(value) || value < 0) return;
+  try {
+    await db.usageCounter.upsert({
+      where: { provider_metric_day: { provider, metric, day } },
+      update: { count: Math.round(value) },
+      create: { provider, metric, day, count: Math.round(value) },
+    });
+  } catch (e) {
+    console.warn("[usage] could not record snapshot", provider, metric, e instanceof Error ? e.message : e);
+  }
+}
+
+/** Today as a UTC-midnight Date in UTC (Resend resets its daily quota at 00:00 UTC). */
+export function utcDay() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
 async function sums(since: Date) {
   const rows = await db.usageCounter.groupBy({
     by: ["provider", "metric"],
@@ -71,7 +94,8 @@ export type ProviderUsage = {
 const GB = 1024 ** 3;
 
 export async function getUsageSummary() {
-  const [limits, today, month, dbSize, fileTotals, projectFileTotals, series] = await Promise.all([
+  const monthStartUtc = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1));
+  const [limits, today, month, dbSize, fileTotals, projectFileTotals, series, resendDaily, resendMonthly] = await Promise.all([
     getSetting("usage"),
     sums(istDay()),
     sums(istMonthStart()),
@@ -91,7 +115,22 @@ export async function getUsageSummary() {
       select: { day: true, count: true },
       orderBy: { day: "asc" },
     }),
+    db.usageCounter.findUnique({ where: { provider_metric_day: { provider: "resend", metric: "account_daily", day: utcDay() } } }),
+    db.usageCounter.findFirst({
+      where: { provider: "resend", metric: "account_monthly", day: { gte: monthStartUtc } },
+      orderBy: { updatedAt: "desc" },
+    }),
   ]);
+
+  // Resend reports whole-account totals with every send; until the first report, use the app's own count.
+  const syncedAt = resendMonthly?.updatedAt.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const resendHint = syncedAt ? `Whole Resend account · synced ${syncedAt}` : "Counted by the app until Resend reports account totals";
 
   const storedBytes = (fileTotals._sum.fileSize ?? 0) + (projectFileTotals._sum.size ?? 0);
   const storedObjects = fileTotals._count.fileKey + projectFileTotals._count;
@@ -102,21 +141,23 @@ export async function getUsageSummary() {
       name: "Resend · email",
       configured: features.email,
       dashboardUrl: "https://resend.com/emails",
-      note: "The free plan also caps sending at 100 emails per day.",
+      note: "Totals refresh from Resend whenever the app sends an email. Use “Send test email” to refresh them now.",
       meters: [
         {
           label: "Emails sent",
-          used: today("resend:emails"),
+          used: Math.max(resendDaily?.count ?? 0, today("resend:emails")),
           limit: limits.resendDaily,
           unit: "count",
           period: "today",
+          hint: resendDaily ? "Whole Resend account · resets 5:30 AM IST" : undefined,
         },
         {
           label: "Emails sent",
-          used: month("resend:emails"),
+          used: Math.max(resendMonthly?.count ?? 0, month("resend:emails")),
           limit: limits.resendMonthly,
           unit: "count",
           period: "this month",
+          hint: resendHint,
         },
         {
           label: "Failed sends",
@@ -298,7 +339,7 @@ export async function sendUsageAlertIfNeeded() {
     details: alerts.map((a) => [`${a.provider} — ${a.label} (${a.period})`, `${a.pct}%`]),
     action: {
       label: "Open usage dashboard",
-      url: new URL("/admin/usage", siteConfig.url).toString(),
+      url: new URL("/welcome?next=/admin/usage", siteConfig.url).toString(),
     },
     footerNote: "Sent at most once a day by the nightly maintenance job.",
   });

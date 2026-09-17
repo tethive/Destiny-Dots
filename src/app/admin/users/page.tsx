@@ -89,7 +89,14 @@ export default async function AdminUsersPage(props: PageProps<"/admin/users">) {
                         <span className="block truncate text-xs text-muted-foreground">{u.email}</span>
                       </span>
                       {u.role === "admin" && <Badge variant="secondary">Admin</Badge>}
-                      {u.banned && <Badge variant="destructive">Suspended</Badge>}
+                      {u.deletedAt ? (
+                        <Badge variant="outline">Deleted by user</Badge>
+                      ) : (
+                        <>
+                          {u.banned && <Badge variant="destructive">Suspended</Badge>}
+                          {u.deactivatedAt && <Badge variant="secondary">Paused</Badge>}
+                        </>
+                      )}
                     </Link>
                   </TableCell>
                   <TableCell>{u.isPro ? <Badge>Pro</Badge> : <span className="text-muted-foreground">Free</span>}</TableCell>

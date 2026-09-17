@@ -53,6 +53,7 @@ export async function signInWithEmail(input: { email: string; password: string; 
     { email: input.email, password: input.password, callbackURL: verified(input.next) },
     captchaHeaders(input.captcha),
   );
+  if (error?.code === "BANNED_USER") return { ok: true, redirectTo: "/account-suspended" };
   if (error) return { ok: false, error: message(error, "Could not sign you in."), unverified: error.code === "EMAIL_NOT_VERIFIED" };
   return { ok: true, redirectTo: welcome(input.next) };
 }

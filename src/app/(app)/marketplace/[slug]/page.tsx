@@ -34,13 +34,14 @@ export default async function ProjectPage(props: PageProps<"/marketplace/[slug]"
     where: { slug },
     include: {
       files: { orderBy: [{ kind: "asc" }, { order: "asc" }] },
-      seller: { select: { id: true, name: true, createdAt: true, sellerProfile: { select: { displayName: true, bio: true } } } },
+      seller: { select: { id: true, name: true, createdAt: true, deactivatedAt: true, sellerProfile: { select: { displayName: true, bio: true } } } },
       reviews: { orderBy: { createdAt: "desc" }, take: 30, include: { buyer: { select: { name: true } } } },
     },
   });
   const isOwner = project?.sellerId === user.id;
   const isAdmin = user.role === "admin";
-  if (!project || (project.status !== "APPROVED" && !isOwner && !isAdmin)) {
+  const listed = project?.status === "APPROVED" && !project.seller.deactivatedAt;
+  if (!project || (!listed && !isOwner && !isAdmin)) {
     // Buyers keep access to archived listings they paid for.
     const purchased = project && (await db.projectPurchase.findUnique({ where: { projectId_buyerId: { projectId: project.id, buyerId: user.id } } }));
     if (!purchased || purchased.status === "REFUNDED") notFound();

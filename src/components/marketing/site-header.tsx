@@ -108,7 +108,7 @@ export function SiteHeader({ domainCounts }: { domainCounts: DomainCounts }) {
           <ThemeToggle />
           {signedIn ? (
             <Button asChild size="lg" className="hidden rounded-full px-4 sm:inline-flex">
-              <Link href="/welcome">Go to dashboard</Link>
+              <a href="/welcome">Go to dashboard</a>
             </Button>
           ) : (
             <>
@@ -238,9 +238,9 @@ export function SiteHeader({ domainCounts }: { domainCounts: DomainCounts }) {
             </div>
             {signedIn ? (
               <Button asChild size="lg" className="h-10 w-full rounded-full">
-                <Link href="/welcome" onClick={() => setMobileOpen(false)}>
+                <a href="/welcome" onClick={() => setMobileOpen(false)}>
                   Go to dashboard
-                </Link>
+                </a>
               </Button>
             ) : (
               <div className="grid grid-cols-2 gap-2">

@@ -34,6 +34,10 @@ model User {
   banReason     String?
   banExpires    DateTime?
   lastActiveAt  DateTime?
+  /// Set when the student pauses their account; cleared on their next sign-in.
+  deactivatedAt DateTime?
+  /// Set when the student deletes their account (personal data is removed, billing records kept).
+  deletedAt     DateTime?
 
   sessions         Session[]
   accounts         Account[]

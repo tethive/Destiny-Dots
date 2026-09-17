@@ -53,6 +53,30 @@ export const passwordChangedTemplate = (name: string): EmailContent => ({
   action: { label: "Reset password", url: url("/forgot-password") },
 });
 
+export const accountDeactivatedTemplate = (name: string): EmailContent => ({
+  subject: "Your Destiny Dots account is paused",
+  preheader: "Log in any time to pick up where you left off.",
+  heading: "Your account is paused",
+  paragraphs: [
+    `Hi ${first(name)}, you've paused your Destiny Dots account. We've signed you out everywhere and hidden any marketplace listings.`,
+    "Your progress, purchases and invoices are safe. Log in any time and your account becomes active again straight away.",
+    "If you didn't do this, log in and change your password.",
+  ],
+  action: { label: "Log in", url: url("/login") },
+});
+
+export const accountDeletedTemplate = (name: string): EmailContent => ({
+  subject: "Your Destiny Dots account has been deleted",
+  preheader: "Your personal data has been removed.",
+  heading: "Your account has been deleted",
+  paragraphs: [
+    `Hi ${first(name)}, as you asked, we've deleted your Destiny Dots account. Your profile, progress, resume, bookmarks and sign-in details are gone.`,
+    "We keep invoices and payment records for as long as Indian tax law requires. They aren't used for anything else.",
+    "You're welcome back any time — signing up again starts a fresh account. If you didn't ask for this, reply to this email straight away.",
+  ],
+  footerNote: "This is the last email we'll send about this account.",
+});
+
 /* -------------------------------------------------------------------------- */
 /* Contact                                                                     */
 /* -------------------------------------------------------------------------- */
@@ -69,7 +93,7 @@ export const contactAdminTemplate = (m: { name: string; email: string; topic: st
     ["Topic", m.topic],
     ["Account", m.signedIn ? "Signed-in user" : "Visitor"],
   ],
-  action: { label: "Open inbox", url: url("/admin/messages") },
+  action: { label: "Open inbox", url: url("/welcome?next=/admin/messages") },
   footerNote: "Sent from the Destiny Dots contact form.",
 });
 
@@ -182,7 +206,7 @@ export const projectSubmittedAdminTemplate = (p: { title: string; seller: string
   preheader: `${p.seller} submitted a project.`,
   heading: "A project is waiting for review",
   paragraphs: [`${p.seller} submitted "${p.title}" to the marketplace.`],
-  action: { label: "Review listing", url: url(`/admin/marketplace/${p.id}`) },
+  action: { label: "Review listing", url: url(`/welcome?next=${encodeURIComponent(`/admin/marketplace/${p.id}`)}`) },
 });
 
 export const projectReviewedTemplate = (p: { name: string; title: string; approved: boolean; reason?: string | null; slug: string; id: string }): EmailContent => ({
@@ -230,7 +254,7 @@ export const disputeOpenedTemplate = (p: { title: string; reason: string; detail
     ? [`A buyer opened a dispute on "${p.title}". Earnings for this sale are on hold until it's resolved.`]
     : [`Hi ${first(p.name)}, a buyer reported a problem with "${p.title}". Our team will review it and may contact you. Earnings for this sale are on hold meanwhile.`],
   quote: `${p.reason}\n\n${p.details}`,
-  action: p.forAdmin ? { label: "Review dispute", url: url("/admin/marketplace?tab=disputes") } : undefined,
+  action: p.forAdmin ? { label: "Review dispute", url: url(`/welcome?next=${encodeURIComponent("/admin/marketplace?tab=disputes")}`) } : undefined,
 });
 
 export const disputeResolvedTemplate = (p: { name: string; title: string; refunded: boolean; resolution: string }): EmailContent => ({

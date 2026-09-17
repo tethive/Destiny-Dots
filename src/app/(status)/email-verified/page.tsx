@@ -4,11 +4,13 @@ import { MailCheck, MailX } from "lucide-react";
 import { AutoContinue, ResendVerificationForm } from "@/components/status/status-actions";
 import { StatusScreen } from "@/components/status/status-screen";
 import { Button } from "@/components/ui/button";
+import { requireFlash } from "@/lib/flash";
 import { safeRedirectPath } from "@/lib/security";
 
 export const metadata: Metadata = { title: "Email confirmation", robots: { index: false } };
 
 export default async function EmailVerifiedPage(props: PageProps<"/email-verified">) {
+  await requireFlash("email-verified", "/login");
   const sp = await props.searchParams;
   const error = typeof sp.error === "string" ? sp.error : undefined;
   const next = typeof sp.next === "string" ? safeRedirectPath(sp.next, "") : "";

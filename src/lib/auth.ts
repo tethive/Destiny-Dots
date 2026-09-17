@@ -4,10 +4,12 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware, isAPIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { admin, captcha, haveIBeenPwned } from "better-auth/plugins";
+import { ADMIN_GATE_COOKIE, adminGateCookieOptions } from "@/lib/admin-gate";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { passwordChangedTemplate, resetPasswordTemplate, verifyEmailTemplate, welcomeTemplate } from "@/lib/email-templates";
 import { env, features, isProduction } from "@/lib/env";
+import { FLASH_COOKIE, flashCookieOptions, type FlashKind } from "@/lib/flash";
 
 const adminEmails = env.ADMIN_EMAILS.split(",")
   .map((e) => e.trim().toLowerCase())
@@ -77,8 +79,9 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
-    // Short cache: bans, role changes and profile edits apply within a minute.
-    cookieCache: { enabled: true, maxAge: 60 },
+    // Saves a database lookup on most requests. Bans also revoke sessions server-side;
+    // role and profile changes reach an open browser within five minutes.
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
   },
 
   rateLimit: {
@@ -102,14 +105,44 @@ export const auth = betterAuth({
 
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
-      // Security notice after an in-app password change.
-      if (ctx.path !== "/change-password" || isAPIError(ctx.context.returned)) return;
-      const user = ctx.context.session?.user;
-      if (user) await sendEmail(user.email, passwordChangedTemplate(user.name));
+      const returned = ctx.context.returned;
+      const failed = isAPIError(returned);
+      const flash = (kind: FlashKind) => ctx.setCookie(FLASH_COOKIE, kind, flashCookieOptions);
+      switch (ctx.path) {
+        case "/change-password": {
+          // Security notice after an in-app password change.
+          const user = ctx.context.session?.user;
+          if (!failed && user) await sendEmail(user.email, passwordChangedTemplate(user.name));
+          break;
+        }
+        // Unlock the matching result page for a few minutes (see lib/flash).
+        case "/sign-out":
+          flash("signed-out");
+          // Hide the admin area again on this browser.
+          ctx.setCookie(ADMIN_GATE_COOKIE, "", { ...adminGateCookieOptions, maxAge: 0 });
+          break;
+        case "/reset-password":
+          if (!failed) flash("password-updated");
+          break;
+        case "/verify-email":
+          flash("email-verified");
+          break;
+        case "/sign-in/email":
+          if (failed && returned.body?.code === "BANNED_USER") flash("account-suspended");
+          break;
+      }
     }),
   },
 
   databaseHooks: {
+    session: {
+      create: {
+        // Signing in again reactivates a paused account.
+        after: async (session) => {
+          await db.user.updateMany({ where: { id: session.userId, deactivatedAt: { not: null }, deletedAt: null }, data: { deactivatedAt: null } });
+        },
+      },
+    },
     user: {
       create: {
         // Promote configured emails to admin; everyone else is a student.

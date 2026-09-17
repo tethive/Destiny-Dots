@@ -22,7 +22,7 @@ export async function getOverview() {
     paths,
     activeLearners7,
   ] = await Promise.all([
-    db.user.count({ where: { role: { not: "admin" } } }),
+    db.user.count({ where: { role: { not: "admin" }, deletedAt: null } }),
     db.user.count({ where: { createdAt: { gte: since30 }, role: { not: "admin" } } }),
     db.user.count({ where: { createdAt: { gte: since7 }, role: { not: "admin" } } }),
     db.subscription.findMany({ where: { status: "ACTIVE", validUntil: { gt: now } }, include: { plan: true } }),

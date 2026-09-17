@@ -12,7 +12,7 @@ const cell = (v: unknown) => {
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
-  if (!session || session.user.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!session || session.user.role !== "admin") return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const filter = userFilterFromParams(Object.fromEntries(request.nextUrl.searchParams));
   const { users } = await listUsers(filter, true);

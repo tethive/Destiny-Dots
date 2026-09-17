@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AlertTriangle, CheckCircle2, CircleDashed, ExternalLink, OctagonAlert } from "lucide-react";
 import { DailyEmailsChart } from "@/components/admin/charts";
-import { UsageLimitsForm } from "@/components/admin/usage-limits-form";
+import { SendTestEmailButton, UsageLimitsForm } from "@/components/admin/usage-limits-form";
 import { PageHeader } from "@/components/app/page-header";
 import { requireAdmin } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -109,6 +109,7 @@ export default async function AdminUsagePage() {
                 <MeterRow key={`${m.label}-${m.period}`} meter={m} alertPct={alertPct} />
               ))}
             </ul>
+            {p.id === "resend" && p.configured && <SendTestEmailButton />}
             {p.note && <p className="mt-auto pt-2 text-xs text-muted-foreground">{p.note}</p>}
           </section>
         ))}
@@ -117,7 +118,7 @@ export default async function AdminUsagePage() {
       <div className="space-y-6">
         <section className="rounded-2xl border bg-card p-5 shadow-xs">
           <h2 className="font-semibold">Emails sent per day</h2>
-          <p className="text-sm text-muted-foreground">Last 30 days · daily limit {limits.resendDaily.toLocaleString("en-IN")}</p>
+          <p className="text-sm text-muted-foreground">Sent by the app · last 30 days · daily limit {limits.resendDaily.toLocaleString("en-IN")}</p>
           <div className="mt-4">
             <DailyEmailsChart data={emailSeries} limit={limits.resendDaily} />
           </div>

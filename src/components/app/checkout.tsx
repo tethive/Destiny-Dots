@@ -33,10 +33,6 @@ function loadRazorpay() {
   });
 }
 
-/**
- * Opens Razorpay Checkout (or the local simulator) and then waits for the
- * server-side webhook to confirm. The browser callback never grants access.
- */
 /** Shown wherever a purchase would start while payments aren't switched on yet. */
 export function PaymentsSoonNotice({ className }: { className?: string }) {
   return (
@@ -52,6 +48,10 @@ export function PaymentsSoonNotice({ className }: { className?: string }) {
 const resultUrl = (outcome: "success" | "failed", kind: "order" | "subscription", id: string) =>
   `/payment/${outcome}?kind=${kind}&id=${encodeURIComponent(id)}&return=${encodeURIComponent(window.location.pathname + window.location.search)}`;
 
+/**
+ * Opens Razorpay Checkout (or the local simulator) and then waits for the
+ * server-side webhook to confirm. The browser callback never grants access.
+ */
 export function CheckoutProvider({ user, available, children }: { user: { name: string; email: string }; available: boolean; children: React.ReactNode }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);

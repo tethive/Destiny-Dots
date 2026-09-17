@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { AccountLifecycle } from "@/components/app/account-actions";
 import { PageHeader } from "@/components/app/page-header";
 import { AppearanceSettings, ProfileForm, SecuritySettings } from "@/components/app/settings-forms";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { contactConfig } from "@/lib/site";
-import { requireUser } from "@/lib/session";
+import { isFreshSession, requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -21,6 +22,8 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
     auth.api.getSession({ headers: hdrs }),
   ]);
   const hasPassword = accounts.some((a) => a.providerId === "credential");
+  // Account deletion needs a recent sign-in (checked again on the server).
+  const needsReauth = !isFreshSession(current?.session.createdAt);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -30,6 +33,7 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -59,23 +63,27 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
               updatedAt: s.updatedAt.toISOString(),
             }))}
           />
-          <section className="mt-6 rounded-2xl border border-destructive/30 bg-card p-5 shadow-xs">
+        </TabsContent>
+
+        <TabsContent value="appearance">
+          <AppearanceSettings />
+        </TabsContent>
+
+        <TabsContent value="account" className="space-y-6">
+          <section className="rounded-2xl border bg-card p-5 shadow-xs">
             <h2 className="font-semibold">Your data</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              To download or permanently delete your account and data, email{" "}
+              Want a copy of everything we hold about you? Email{" "}
               <a
                 className="font-medium text-primary underline-offset-4 hover:underline"
                 href={`mailto:${contactConfig.email}?subject=${encodeURIComponent("Data request")}&body=${encodeURIComponent(`Account email: ${user.email}`)}`}
               >
                 {contactConfig.email}
               </a>{" "}
-              from your registered address.
+              from your registered address and we&apos;ll send it to you.
             </p>
           </section>
-        </TabsContent>
-
-        <TabsContent value="appearance">
-          <AppearanceSettings />
+          <AccountLifecycle isAdmin={user.role === "admin"} needsReauth={needsReauth} email={user.email} />
         </TabsContent>
       </Tabs>
     </div>

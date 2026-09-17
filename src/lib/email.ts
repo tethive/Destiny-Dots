@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { env, features, isProduction } from "@/lib/env";
 import { escapeHtml } from "@/lib/security";
 import { contactConfig, siteConfig } from "@/lib/site";
-import { trackUsage } from "@/server/usage";
+import { recordUsageSnapshot, trackUsage, utcDay } from "@/server/usage";
 
 /* -------------------------------------------------------------------------- */
 /* Layout                                                                      */
@@ -75,6 +75,19 @@ function renderText(c: EmailContent) {
 
 let resend: Resend | null = null;
 
+/** Resend returns the account's used quota with every send (the daily figure only on the free plan). */
+async function recordResendQuota(headers: Record<string, string> | null) {
+  if (!headers) return;
+  const pick = (name: string) => (headers[name] === undefined ? null : Number(headers[name]));
+  const daily = pick("x-resend-daily-quota");
+  const monthly = pick("x-resend-monthly-quota");
+  const day = utcDay();
+  await Promise.all([
+    daily !== null && recordUsageSnapshot("resend", "account_daily", daily, day),
+    monthly !== null && recordUsageSnapshot("resend", "account_monthly", monthly, day),
+  ]);
+}
+
 /**
  * Sends through Resend. Never throws: email failure must not break sign-up or
  * fulfilment, so errors are logged for follow-up. In development without a key
@@ -91,7 +104,7 @@ export async function sendEmail(to: string, content: EmailContent, options: { re
   }
   resend ??= new Resend(env.RESEND_API_KEY);
   try {
-    const { error } = await resend.emails.send({
+    const { error, headers } = await resend.emails.send({
       from: env.EMAIL_FROM ?? `${siteConfig.name} <onboarding@resend.dev>`,
       to,
       replyTo: options.replyTo,
@@ -99,6 +112,7 @@ export async function sendEmail(to: string, content: EmailContent, options: { re
       html: renderHtml(content),
       text: renderText(content),
     });
+    await recordResendQuota(headers);
     if (error) {
       console.error("[email] send failed", content.subject, error);
       await trackUsage("resend", "failed");

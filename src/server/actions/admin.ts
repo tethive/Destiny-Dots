@@ -1,16 +1,18 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
+import { contactInbox, sendEmail } from "@/lib/email";
+import { features } from "@/lib/env";
 import { disputeResolvedTemplate, payoutPaidTemplate, projectReviewedTemplate } from "@/lib/email-templates";
 import { decrypt } from "@/lib/security";
 import { cleanupImports, importJobs, importUpdates } from "@/server/importers";
 import { checkLinks, inspectLink } from "@/server/link-check";
 import { sellerEarnings } from "@/server/marketplace";
+import { SEARCH_CACHE_TAG } from "@/server/search";
 import { saveSetting } from "@/server/settings";
 import { deleteObject } from "@/lib/storage";
 import { verifyUploadedObject } from "@/server/uploads";
@@ -42,6 +44,7 @@ const csv = (s: string) =>
     .filter(Boolean);
 
 function revalidateCatalogue(slug?: string, domainTag?: string) {
+  revalidateTag(SEARCH_CACHE_TAG, "max");
   revalidatePath("/", "layout");
   if (slug) revalidatePath(`/learn/${slug}`, "layout");
   if (domainTag) revalidatePath(`/resources/${domainTag}`);
@@ -764,4 +767,21 @@ export async function saveUsageLimits(input: unknown): Promise<AdminResult> {
   await audit(admin.id, "settings.usage", "AppSetting", "usage", res.value);
   revalidatePath("/admin/usage");
   return { ok: true, message: "Limits saved" };
+}
+
+/** Sends one email to the admin inbox: checks delivery and refreshes Resend's account totals. */
+export async function sendUsageTestEmail(): Promise<AdminResult> {
+  const admin = await requireAdmin();
+  if (!features.email) return { ok: false, error: "Email isn't set up yet — add RESEND_API_KEY in Vercel." };
+  const res = await sendEmail(contactInbox(), {
+    subject: "Destiny Dots · test email",
+    preheader: "Email sending works.",
+    heading: "Email sending works",
+    paragraphs: [`${admin.name} sent this test from Admin → Usage & limits. No action needed.`],
+    footerNote: "Sent from the admin usage page.",
+  });
+  revalidatePath("/admin/usage");
+  return res.ok
+    ? { ok: true, message: `Test email sent to ${contactInbox()} — totals refreshed` }
+    : { ok: false, error: "Resend didn't accept the email. Check the Resend dashboard for the reason." };
 }

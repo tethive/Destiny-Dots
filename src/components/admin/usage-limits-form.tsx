@@ -2,12 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Field } from "@/components/admin/form-bits";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { saveUsageLimits } from "@/server/actions/admin";
+import { saveUsageLimits, sendUsageTestEmail } from "@/server/actions/admin";
 
 export type UsageLimits = {
   alertPct: number;
@@ -65,5 +65,29 @@ export function UsageLimitsForm({ initial }: { initial: UsageLimits }) {
         {pending && <LoaderCircle className="animate-spin" />} Save limits
       </Button>
     </form>
+  );
+}
+
+export function SendTestEmailButton() {
+  const [pending, start] = useTransition();
+  const router = useRouter();
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="mt-3 self-start rounded-full"
+      disabled={pending}
+      onClick={() =>
+        start(async () => {
+          const res = await sendUsageTestEmail();
+          if (!res.ok) return void toast.error(res.error);
+          toast.success(res.message);
+          router.refresh();
+        })
+      }
+    >
+      {pending ? <LoaderCircle className="animate-spin" /> : <Send />} Send test email
+    </Button>
   );
 }

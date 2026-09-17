@@ -3,11 +3,16 @@ import Link from "next/link";
 import { ShieldOff } from "lucide-react";
 import { StatusScreen } from "@/components/status/status-screen";
 import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
+import { hasFlash } from "@/lib/flash";
+import { getSession } from "@/lib/session";
 import { contactConfig } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Account suspended", robots: { index: false } };
 
-export default function AccountSuspendedPage() {
+export default async function AccountSuspendedPage() {
+  const [session, flashed] = await Promise.all([getSession(), hasFlash("account-suspended")]);
+  if (!flashed && !session?.user.banned) redirect(session ? "/welcome" : "/");
   return (
     <StatusScreen
       tone="error"

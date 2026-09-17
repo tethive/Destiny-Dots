@@ -68,7 +68,14 @@ export default async function AdminUserPage(props: PageProps<"/admin/users/[id]"
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{user.name}</h1>
             {user.role === "admin" && <Badge variant="secondary">Admin</Badge>}
-            {user.banned && <Badge variant="destructive">Suspended</Badge>}
+            {user.deletedAt ? (
+              <Badge variant="outline">Deleted by user</Badge>
+            ) : (
+              <>
+                {user.banned && <Badge variant="destructive">Suspended</Badge>}
+                {user.deactivatedAt && <Badge variant="secondary">Paused</Badge>}
+              </>
+            )}
           </div>
           <p className="text-muted-foreground">{user.email}</p>
           <p className="mt-1 text-sm text-muted-foreground">

@@ -4,13 +4,23 @@ import { CreditCard } from "lucide-react";
 import { StatusScreen } from "@/components/status/status-screen";
 import { Button } from "@/components/ui/button";
 import { safeRedirectPath } from "@/lib/security";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Payment not completed", robots: { index: false } };
 
 export default async function PaymentFailedPage(props: PageProps<"/payment/failed">) {
-  await requireUser("/billing");
+  const user = await requireUser("/billing");
   const sp = await props.searchParams;
+  const id = typeof sp.id === "string" ? sp.id.slice(0, 40) : "";
+  // Only reachable for one of your own checkouts that did not complete.
+  const record =
+    sp.kind === "subscription"
+      ? await db.subscription.findFirst({ where: { id, userId: user.id }, select: { status: true } })
+      : await db.order.findFirst({ where: { id, userId: user.id }, select: { status: true } });
+  if (!record) redirect("/billing");
+  if (["PAID", "REFUNDED", "ACTIVE"].includes(record.status)) redirect(`/payment/success?kind=${sp.kind === "subscription" ? "subscription" : "order"}&id=${encodeURIComponent(id)}`);
   const back = typeof sp.return === "string" ? safeRedirectPath(sp.return, "") : "";
   const cancelled = sp.reason === "cancelled";
 

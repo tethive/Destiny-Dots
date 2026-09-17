@@ -6,6 +6,7 @@ import { contactInbox, sendEmail } from "@/lib/email";
 import { contactAckTemplate, contactAdminTemplate } from "@/lib/email-templates";
 import { clientIp, rateLimit, verifyTurnstile } from "@/lib/security";
 import { contactTopics } from "@/lib/contact";
+import { setFlash } from "@/lib/flash";
 import { getSession } from "@/lib/session";
 
 const schema = z.object({
@@ -26,7 +27,10 @@ export async function submitContact(input: z.input<typeof schema>): Promise<Cont
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const field = issue.path[0];
-    if (field === "website") return { ok: true }; // silently drop bots
+    if (field === "website") {
+      await setFlash("message-sent");
+      return { ok: true }; // silently drop bots
+    }
     return { ok: false, error: issue.message, field: field === "name" || field === "email" || field === "message" ? field : undefined };
   }
   const data = parsed.data;
@@ -48,5 +52,6 @@ export async function submitContact(input: z.input<typeof schema>): Promise<Cont
     sendEmail(contactInbox(), contactAdminTemplate({ ...data, signedIn: Boolean(session) }), { replyTo: data.email }),
     sendEmail(data.email, contactAckTemplate(data)),
   ]);
+  await setFlash("message-sent");
   return { ok: true };
 }

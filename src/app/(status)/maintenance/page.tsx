@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Wrench } from "lucide-react";
 import { StatusScreen } from "@/components/status/status-screen";
+import { redirect } from "next/navigation";
 import { contactConfig } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Down for maintenance", robots: { index: false } };
 
 export default function MaintenancePage() {
+  if (process.env.MAINTENANCE_MODE !== "1") redirect("/");
   return (
     <StatusScreen
       tone="info"

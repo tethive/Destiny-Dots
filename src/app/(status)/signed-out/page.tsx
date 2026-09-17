@@ -3,10 +3,15 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { StatusScreen } from "@/components/status/status-screen";
 import { Button } from "@/components/ui/button";
+import { redirect } from "next/navigation";
+import { requireFlash } from "@/lib/flash";
+import { getSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Signed out", robots: { index: false } };
 
-export default function SignedOutPage() {
+export default async function SignedOutPage() {
+  if (await getSession()) redirect("/welcome");
+  await requireFlash("signed-out");
   return (
     <StatusScreen
       tone="info"

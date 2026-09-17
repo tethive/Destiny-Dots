@@ -19,7 +19,7 @@ export function userWhere(f: UserFilter): Prisma.UserWhereInput {
   return {
     ...(f.q ? { OR: [{ name: { contains: f.q, mode: "insensitive" } }, { email: { contains: f.q, mode: "insensitive" } }] } : {}),
     ...(f.role ? { role: f.role } : {}),
-    ...(f.status === "banned" ? { banned: true } : {}),
+    ...(f.status === "banned" ? { banned: true, deletedAt: null } : {}),
     ...(f.plan === "pro" ? { entitlements: { some: activePlanWhere() } } : {}),
     ...(f.plan === "free" ? { entitlements: { none: activePlanWhere() } } : {}),
   };

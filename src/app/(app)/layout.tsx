@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { AppShell } from "@/components/app/app-shell";
 import { CheckoutProvider } from "@/components/app/checkout";
 import { paymentsAvailable } from "@/server/payments";
@@ -11,7 +12,8 @@ import { searchPaths } from "@/server/search";
 export default async function StudentLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
   const [access, cookieStore, pathItems] = await Promise.all([getAccess(user.id), cookies(), searchPaths()]);
-  void touchActivity(user.id);
+  // Runs after the response is sent, so it never slows the page down.
+  after(() => touchActivity(user.id));
 
   return (
     <CommandMenuProvider mode="app" isAdmin={user.role === "admin"} pathItems={pathItems}>

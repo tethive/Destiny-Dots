@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import { ADMIN_GATE_COOKIE, verifyAdminGate } from "@/lib/admin-gate";
 
 /** Routes that need a signed-in user. Real authorisation (role, bans) happens in server layouts. */
 const protectedPrefixes = [
   "/dashboard",
   "/onboarding",
-  "/welcome",
   "/my-paths",
   "/explore",
   "/learn",
@@ -69,10 +69,18 @@ function contentSecurityPolicy(nonce: string) {
     .join("; ");
 }
 
-const maintenanceOpen = ["/maintenance", "/admin", "/login", "/forgot-password", "/reset-password"];
+const maintenanceOpen = ["/maintenance", "/admin", "/login", "/welcome", "/forgot-password", "/reset-password"];
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // The admin area does not exist for browsers without the signed gate cookie.
+  if ((pathname === "/admin" || pathname.startsWith("/admin/")) && !(await verifyAdminGate(request.cookies.get(ADMIN_GATE_COOKIE)?.value))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/_not-found-page";
+    url.search = "";
+    return NextResponse.rewrite(url, { status: 404 });
+  }
 
   if (process.env.MAINTENANCE_MODE === "1" && !maintenanceOpen.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     const url = request.nextUrl.clone();

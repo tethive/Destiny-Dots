@@ -133,13 +133,13 @@ export function AppShell({
               </Badge>
             )}
             {user.role === "admin" && (
-              <Link
-                href={area === "admin" ? "/dashboard" : "/admin"}
+              <a
+                href={area === "admin" ? "/dashboard" : "/welcome?next=/admin"}
                 className="hidden h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
               >
                 {area === "admin" ? <UserRound className="size-4" /> : <Shield className="size-4" />}
                 {area === "admin" ? "Student view" : "Admin"}
-              </Link>
+              </a>
             )}
             <ThemeToggle />
           </div>
@@ -185,9 +185,9 @@ function UserMenu({ user, area }: { user: ShellUser; area: "student" | "admin" }
               </DropdownMenuItem>
               {user.role === "admin" && (
                 <DropdownMenuItem asChild>
-                  <Link href={area === "admin" ? "/dashboard" : "/admin"}>
+                  <a href={area === "admin" ? "/dashboard" : "/welcome?next=/admin"}>
                     <Shield /> {area === "admin" ? "Student view" : "Admin panel"}
-                  </Link>
+                  </a>
                 </DropdownMenuItem>
               )}
             </DropdownMenuGroup>

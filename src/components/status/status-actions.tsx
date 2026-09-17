@@ -10,20 +10,19 @@ import { resendVerification } from "@/lib/auth-client";
 
 /** Counts down, then navigates. Shown on success pages that continue automatically. */
 export function AutoContinue({ href, seconds = 5, label = "Continue" }: { href: string; seconds?: number; label?: string }) {
-  const router = useRouter();
   const [left, setLeft] = useState(seconds);
 
   useEffect(() => {
     if (left <= 0) {
-      router.replace(href);
+      window.location.replace(href);
       return;
     }
     const id = setTimeout(() => setLeft((n) => n - 1), 1000);
     return () => clearTimeout(id);
-  }, [left, href, router]);
+  }, [left, href]);
 
   return (
-    <Button size="lg" className="h-11 rounded-full px-6" onClick={() => router.replace(href)}>
+    <Button size="lg" className="h-11 rounded-full px-6" onClick={() => window.location.replace(href)}>
       {label} {left > 0 && <span className="tabular-nums opacity-70">({left})</span>}
     </Button>
   );

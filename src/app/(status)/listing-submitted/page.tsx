@@ -5,6 +5,7 @@ import { StatusDetails, StatusScreen } from "@/components/status/status-screen";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { formatINR } from "@/lib/pricing";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Listing submitted", robots: { index: false } };
@@ -14,6 +15,8 @@ export default async function ListingSubmittedPage(props: PageProps<"/listing-su
   const { id } = await props.searchParams;
   const project =
     typeof id === "string" ? await db.project.findFirst({ where: { id, sellerId: user.id }, select: { id: true, title: true, priceInr: true, status: true } }) : null;
+
+  if (!project) redirect("/marketplace/sell");
 
   return (
     <StatusScreen

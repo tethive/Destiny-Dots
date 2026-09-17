@@ -3,10 +3,12 @@ import Link from "next/link";
 import { KeyRound } from "lucide-react";
 import { StatusScreen } from "@/components/status/status-screen";
 import { Button } from "@/components/ui/button";
+import { requireFlash } from "@/lib/flash";
 
 export const metadata: Metadata = { title: "Password updated", robots: { index: false } };
 
-export default function PasswordUpdatedPage() {
+export default async function PasswordUpdatedPage() {
+  await requireFlash("password-updated", "/login");
   return (
     <StatusScreen
       tone="success"

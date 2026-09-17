@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -11,6 +11,11 @@ export const getSession = cache(async () => auth.api.getSession({ headers: await
 export type AppUser = NonNullable<Awaited<ReturnType<typeof getSession>>>["user"];
 
 export const isAdmin = (user: { role?: string | null }) => user.role === "admin";
+
+/** Sensitive actions (like deleting the account) need a sign-in from the last 15 minutes. */
+export function isFreshSession(createdAt: Date | string | undefined) {
+  return createdAt !== undefined && Date.now() - new Date(createdAt).getTime() <= 15 * 60 * 1000;
+}
 
 /** Signed-in student or admin; otherwise redirect to login. */
 export async function requireUser(nextPath?: string) {
@@ -22,7 +27,7 @@ export async function requireUser(nextPath?: string) {
 
 export async function requireAdmin() {
   const user = await requireUser("/admin");
-  if (!isAdmin(user)) redirect("/dashboard");
+  if (!isAdmin(user)) notFound();
   return user;
 }
 
