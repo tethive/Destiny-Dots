@@ -33,7 +33,7 @@ const s = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between" },
   brand: { fontSize: 16, fontFamily: "Helvetica-Bold" },
   brandRow: { flexDirection: "row", alignItems: "center", marginBottom: 2 },
-  logo: { width: 28, height: 28, marginRight: 8 },
+  logo: { width: 36, height: 36, marginRight: 8 },
   accent: { color: "#5b3fd6" },
   title: { fontSize: 20, fontFamily: "Helvetica-Bold", textAlign: "right" },
   muted: { color: muted },

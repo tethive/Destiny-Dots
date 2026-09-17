@@ -65,7 +65,7 @@ export function AppShell({
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
                 <Link href={area === "admin" ? "/admin" : "/dashboard"}>
-                  <Image src={brandImages.mark} alt="" width={32} height={32} className="size-8 shrink-0" />
+                  <Image src={brandImages.badge} alt="" width={36} height={36} className="size-9 shrink-0" />
                   <span className="grid leading-tight">
                     <span className="truncate font-semibold">Destiny Dots</span>
                     <span className="truncate text-xs text-muted-foreground">{area === "admin" ? "Admin panel" : "Student"}</span>

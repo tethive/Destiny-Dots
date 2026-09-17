@@ -15,7 +15,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/invoices/[n
   const invoice = await getInvoiceView(number, session.user);
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const logo = await readFile(path.join(process.cwd(), "public/brand/logo-mark.png")).catch(() => undefined);
+  const logo = await readFile(path.join(process.cwd(), "public/brand/logo-badge.png")).catch(() => undefined);
   const pdf = await renderToBuffer(<InvoiceDocument invoice={invoice} logo={logo} />);
   return new NextResponse(new Uint8Array(pdf), {
     headers: {

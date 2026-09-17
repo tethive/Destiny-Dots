@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 
 /** Paths of the generated brand images (see scripts/generate-brand-assets.mjs). */
 export const brandImages = {
-  mark: "/brand/logo-mark.png",
   badge: "/brand/logo-badge.png",
 };
 
@@ -18,7 +17,7 @@ export function Logo({ className }: { className?: string }) {
       )}
       aria-label="Destiny Dots home"
     >
-      <Image src={brandImages.mark} alt="" width={32} height={32} className="size-8" priority />
+      <Image src={brandImages.badge} alt="" width={40} height={40} className="size-10" priority />
       <span className="text-[0.975rem] font-semibold tracking-tight text-foreground">Destiny Dots</span>
     </Link>
   );
