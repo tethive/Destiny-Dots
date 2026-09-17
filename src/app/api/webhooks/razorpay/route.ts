@@ -9,6 +9,7 @@ import {
   refundOrder,
   verifyWebhookSignature,
 } from "@/server/payments";
+import { trackUsage } from "@/server/usage";
 
 type Entity = Record<string, unknown> & { id: string; notes?: Record<string, string> };
 type RazorpayEvent = {
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
     throw e;
   }
 
+  await trackUsage("razorpay", "webhooks");
   const order = body.payload.order?.entity;
   const payment = body.payload.payment?.entity;
   const subscription = body.payload.subscription?.entity;

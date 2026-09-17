@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { env, features } from "@/lib/env";
 import { safeFetch } from "@/lib/security";
 import { getSetting } from "@/server/settings";
+import { trackUsage, type UsageProvider } from "@/server/usage";
 
 /**
  * Pulls fresh job listings and tech news from public APIs and feeds. Imports are
@@ -143,7 +144,8 @@ function inferWorkMode(...texts: unknown[]): WorkMode {
   return "ONSITE";
 }
 
-async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
+async function getJson<T>(provider: UsageProvider, url: string, init?: RequestInit): Promise<T> {
+  await trackUsage(provider, "calls");
   const res = await fetch(url, { ...init, headers: { "User-Agent": USER_AGENT, Accept: "application/json", ...init?.headers }, signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return (await res.json()) as T;
@@ -273,7 +275,7 @@ export async function importJobs(): Promise<ImportReport[]> {
             sort_by: "date",
             "content-type": "application/json",
           });
-          const data = await getJson<{ results: AdzunaResult[] }>(`https://api.adzuna.com/v1/api/jobs/${settings.jobsCountry}/search/1?${params}`);
+          const data = await getJson<{ results: AdzunaResult[] }>("adzuna", `https://api.adzuna.com/v1/api/jobs/${settings.jobsCountry}/search/1?${params}`);
           for (const r of data.results ?? []) {
             jobs.push({
               source: "adzuna",
@@ -299,7 +301,7 @@ export async function importJobs(): Promise<ImportReport[]> {
       await run("jooble", async () => {
         const jobs: JobInput[] = [];
         for (const [domainTag, keywords] of queries) {
-          const data = await getJson<{ jobs: JoobleJob[] }>(`https://jooble.org/api/${encodeURIComponent(env.JOOBLE_API_KEY!)}`, {
+          const data = await getJson<{ jobs: JoobleJob[] }>("jooble", `https://jooble.org/api/${encodeURIComponent(env.JOOBLE_API_KEY!)}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ keywords, location: "India", page: 1, ResultOnPage: 15 }),
@@ -329,7 +331,7 @@ export async function importJobs(): Promise<ImportReport[]> {
     // Remotive asks for no more than a few requests a day, so fetch once and match locally.
     reports.push(
       await run("remotive", async () => {
-        const data = await getJson<{ jobs: RemotiveJob[] }>("https://remotive.com/api/remote-jobs?category=software-dev&limit=150");
+        const data = await getJson<{ jobs: RemotiveJob[] }>("remotive", "https://remotive.com/api/remote-jobs?category=software-dev&limit=150");
         const jobs: JobInput[] = [];
         for (const r of data.jobs ?? []) {
           const hay = `${r.title} ${r.description.slice(0, 2000)}`.toLowerCase();
@@ -401,7 +403,7 @@ export async function importUpdates(): Promise<ImportReport[]> {
       await run("devto", async () => {
         const items: UpdateInput[] = [];
         for (const [domainTag, tag] of Object.entries(devtoTags)) {
-          const articles = await getJson<DevtoArticle[]>(`https://dev.to/api/articles?tag=${tag}&top=7&per_page=6`);
+          const articles = await getJson<DevtoArticle[]>("devto", `https://dev.to/api/articles?tag=${tag}&top=7&per_page=6`);
           for (const a of articles) {
             items.push({
               source: "devto",
@@ -426,7 +428,7 @@ export async function importUpdates(): Promise<ImportReport[]> {
         const items: UpdateInput[] = [];
         const since = Math.floor(cutoff / 1000);
         for (const [domainTag, query] of Object.entries(hnQueries)) {
-          const data = await getJson<{ hits: HnHit[] }>(
+          const data = await getJson<{ hits: HnHit[] }>("hackernews", 
             `https://hn.algolia.com/api/v1/search?tags=story&query=${encodeURIComponent(query)}&numericFilters=points>150,created_at_i>${since}&hitsPerPage=5`,
           );
           for (const h of data.hits ?? []) {
@@ -452,6 +454,7 @@ export async function importUpdates(): Promise<ImportReport[]> {
     for (const feed of settings.rssFeeds) {
       reports.push(
         await run(`rss:${feed.name}`, async () => {
+          await trackUsage("rss", "calls");
           const res = await safeFetch(feed.url, { headers: { Accept: "application/rss+xml, application/atom+xml, application/xml;q=0.9" }, timeoutMs: 15000 });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const body = await res.text();

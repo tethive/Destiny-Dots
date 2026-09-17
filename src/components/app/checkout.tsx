@@ -49,6 +49,9 @@ export function PaymentsSoonNotice({ className }: { className?: string }) {
   );
 }
 
+const resultUrl = (outcome: "success" | "failed", kind: "order" | "subscription", id: string) =>
+  `/payment/${outcome}?kind=${kind}&id=${encodeURIComponent(id)}&return=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+
 export function CheckoutProvider({ user, available, children }: { user: { name: string; email: string }; available: boolean; children: React.ReactNode }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -64,12 +67,11 @@ export function CheckoutProvider({ user, available, children }: { user: { name: 
       for (let i = 0; i < 30; i++) {
         const { status } = await checkPaymentStatus(kind, id);
         if (status === "PAID") {
-          toast.success("Payment confirmed — content unlocked.");
-          router.refresh();
+          router.push(resultUrl("success", kind, id));
           break;
         }
         if (status === "FAILED") {
-          toast.error("The payment didn't go through. You haven't been charged.");
+          router.push(resultUrl("failed", kind, id));
           break;
         }
         if (i === 29) toast.info("Payment received. Access will appear as soon as Razorpay confirms it.");
@@ -147,7 +149,7 @@ export function CheckoutProvider({ user, available, children }: { user: { name: 
                 setConfirming(false);
                 if (!res.ok) return void toast.error(res.error);
                 setSim(null);
-                toast.success("Payment confirmed — content unlocked.");
+                router.push(resultUrl("success", sim.kind, sim.kind === "order" ? sim.orderId : sim.subscriptionId));
                 router.refresh();
               }}
             >

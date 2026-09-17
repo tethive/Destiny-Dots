@@ -756,3 +756,12 @@ export async function revokeAdminSession(sessionId: string): Promise<AdminResult
   revalidatePath("/admin/security");
   return { ok: true, message: "Session signed out" };
 }
+
+export async function saveUsageLimits(input: unknown): Promise<AdminResult> {
+  const admin = await requireAdmin();
+  const res = await saveSetting("usage", input);
+  if (!res.ok) return { ok: false, error: res.error };
+  await audit(admin.id, "settings.usage", "AppSetting", "usage", res.value);
+  revalidatePath("/admin/usage");
+  return { ok: true, message: "Limits saved" };
+}

@@ -267,7 +267,7 @@ export async function fulfillOrder(orderId: string, razorpayPaymentId: string | 
   }
 }
 
-async function ctaForOrder(order: { scope: Scope; scopeId: string | null }) {
+export async function ctaForOrder(order: { scope: Scope; scopeId: string | null }) {
   if (order.scope === "PROJECT" && order.scopeId) {
     const p = await db.project.findUnique({ where: { id: order.scopeId }, select: { slug: true } });
     return { label: "Open your project", path: p ? `/marketplace/${p.slug}` : "/marketplace/purchases" };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { LoaderCircle, MailCheck } from "lucide-react";
 import { EMAIL_RE, FormField, fieldAria, fieldInputClass } from "@/components/form-field";
 import { useTurnstile } from "@/components/security/turnstile";
@@ -18,6 +19,7 @@ export function ContactForm({ defaults }: { defaults?: { name?: string; email?: 
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const captcha = useTurnstile("contact");
+  const router = useRouter();
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +47,7 @@ export function ContactForm({ defaults }: { defaults?: { name?: string; email?: 
       if (!res.ok) return setErrors(res.field ? { [res.field]: res.error } : { form: res.error });
       form.reset();
       setSentTo(email);
+      router.push("/message-sent");
     });
   }
 

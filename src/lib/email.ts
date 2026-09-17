@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { env, features, isProduction } from "@/lib/env";
 import { escapeHtml } from "@/lib/security";
 import { contactConfig, siteConfig } from "@/lib/site";
+import { trackUsage } from "@/server/usage";
 
 /* -------------------------------------------------------------------------- */
 /* Layout                                                                      */
@@ -100,11 +101,14 @@ export async function sendEmail(to: string, content: EmailContent, options: { re
     });
     if (error) {
       console.error("[email] send failed", content.subject, error);
+      await trackUsage("resend", "failed");
       return { ok: false };
     }
+    await trackUsage("resend", "emails");
     return { ok: true };
   } catch (e) {
     console.error("[email] send threw", content.subject, e);
+    await trackUsage("resend", "failed");
     return { ok: false };
   }
 }

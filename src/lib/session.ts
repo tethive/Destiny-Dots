@@ -16,7 +16,7 @@ export const isAdmin = (user: { role?: string | null }) => user.role === "admin"
 export async function requireUser(nextPath?: string) {
   const session = await getSession();
   if (!session) redirect(nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login");
-  if (session.user.banned) redirect("/login?error=banned");
+  if (session.user.banned) redirect("/account-suspended");
   return session.user;
 }
 

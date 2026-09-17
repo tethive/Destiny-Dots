@@ -21,6 +21,8 @@ export function safeNext(next: string | null | undefined) {
 
 /** After any successful sign-in the server decides where to go (role, onboarding). */
 const welcome = (next?: string) => `/welcome${next ? `?next=${encodeURIComponent(next)}` : ""}`;
+/** Where the link in a verification email lands (Better Auth appends ?error=… on failure). */
+const verified = (next?: string) => `/email-verified${next ? `?next=${encodeURIComponent(next)}` : ""}`;
 
 const captchaHeaders = (token?: string | null) => (token ? { headers: { "x-captcha-response": token } } : undefined);
 
@@ -48,7 +50,7 @@ function message(error: { message?: string; code?: string; status?: number } | n
 
 export async function signInWithEmail(input: { email: string; password: string; next?: string; captcha?: string | null }): Promise<AuthResult> {
   const { error } = await authClient.signIn.email(
-    { email: input.email, password: input.password, callbackURL: welcome(input.next) },
+    { email: input.email, password: input.password, callbackURL: verified(input.next) },
     captchaHeaders(input.captcha),
   );
   if (error) return { ok: false, error: message(error, "Could not sign you in."), unverified: error.code === "EMAIL_NOT_VERIFIED" };
@@ -69,7 +71,7 @@ export async function signUp(input: {
   captcha?: string | null;
 }): Promise<AuthResult> {
   const { data, error } = await authClient.signUp.email(
-    { name: input.name, email: input.email, password: input.password, callbackURL: welcome(input.next) },
+    { name: input.name, email: input.email, password: input.password, callbackURL: verified(input.next) },
     captchaHeaders(input.captcha),
   );
   if (error) return { ok: false, error: message(error, "Could not create your account.") };
@@ -79,7 +81,7 @@ export async function signUp(input: {
 }
 
 export async function resendVerification(input: { email: string; next?: string }) {
-  const { error } = await authClient.sendVerificationEmail({ email: input.email, callbackURL: welcome(input.next) });
+  const { error } = await authClient.sendVerificationEmail({ email: input.email, callbackURL: verified(input.next) });
   return error ? { ok: false, error: message(error, "Could not send the email.") } : { ok: true };
 }
 
@@ -97,5 +99,5 @@ export async function requestPasswordReset(input: { email: string; captcha?: str
 export async function resetPassword(input: { token: string; password: string }): Promise<AuthResult> {
   const { error } = await authClient.resetPassword({ newPassword: input.password, token: input.token });
   if (error) return { ok: false, error: message(error, "This reset link is invalid or has expired.") };
-  return { ok: true, redirectTo: "/login?reset=1" };
+  return { ok: true, redirectTo: "/password-updated" };
 }

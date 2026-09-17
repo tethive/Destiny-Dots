@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { env, features, isProduction } from "@/lib/env";
+import { trackUsage } from "@/server/usage";
 
 /* -------------------------------------------------------------------------- */
 /* Request identity                                                            */
@@ -53,6 +54,7 @@ export async function rateLimit(name: string, identifier: string, max: number, w
 export async function verifyTurnstile(token: string | undefined | null, ip?: string) {
   if (!features.turnstile) return !isProduction; // allowed only in development
   if (!token) return false;
+  await trackUsage("turnstile", "checks");
   const body = new URLSearchParams({ secret: env.TURNSTILE_SECRET_KEY!, response: token });
   if (ip && ip !== "unknown") body.set("remoteip", ip);
   try {

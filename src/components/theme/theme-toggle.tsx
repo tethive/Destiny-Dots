@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import { useTheme } from "next-themes";
 import { AnimatePresence, motion } from "motion/react";
 import { Monitor, Moon, Sun } from "lucide-react";
@@ -59,12 +59,18 @@ const options = [
 ] as const;
 
 /** Three-way segmented control: Light · Dark · System. */
-export function ThemeSegmented({ className }: { className?: string }) {
+export function ThemeSegmented({ className, fullWidth = false }: { className?: string; fullWidth?: boolean }) {
   const { theme, setTheme } = useTheme();
   const mounted = useMounted();
+  // Unique per instance so two switchers on one page don't animate into each other.
+  const pillId = useId();
 
   return (
-    <div role="radiogroup" aria-label="Colour theme" className={cn("inline-flex rounded-full border bg-muted/60 p-0.5", className)}>
+    <div
+      role="radiogroup"
+      aria-label="Colour theme"
+      className={cn(fullWidth ? "grid w-full grid-cols-3" : "inline-flex", "rounded-full border bg-muted/60 p-0.5", className)}
+    >
       {options.map(({ value, label, icon: Icon }) => {
         const active = mounted && theme === value;
         return (
@@ -76,13 +82,13 @@ export function ThemeSegmented({ className }: { className?: string }) {
             aria-label={label}
             onClick={() => setTheme(value)}
             className={cn(
-              "relative flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-colors",
+              "relative isolate flex h-7 items-center justify-center gap-1.5 rounded-full px-2.5 text-xs font-medium whitespace-nowrap transition-colors",
               active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {active && (
               <motion.span
-                layoutId="theme-seg"
+                layoutId={pillId}
                 className="absolute inset-0 -z-10 rounded-full bg-background shadow-sm ring-1 ring-border"
                 transition={{ type: "spring", stiffness: 420, damping: 34 }}
               />

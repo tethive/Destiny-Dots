@@ -907,3 +907,15 @@ model AuditLog {
 
   @@index([createdAt])
 }
+
+/// Daily usage counters for third-party services (emails sent, storage operations, API calls…).
+model UsageCounter {
+  provider  String
+  metric    String
+  day       DateTime @db.Date
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@id([provider, metric, day])
+  @@index([day])
+}

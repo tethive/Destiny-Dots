@@ -64,6 +64,19 @@ export const settingSchemas = {
         { name: "GitHub Blog", url: "https://github.blog/feed/", domainTags: ["full-stack"] },
       ]),
   }),
+  /** Free-tier limits to compare usage against. Edit when you change plans. */
+  usage: z.object({
+    alertPct: z.number().int().min(10).max(100).default(80),
+    resendDaily: z.number().int().min(1).default(100),
+    resendMonthly: z.number().int().min(1).default(3000),
+    r2StorageGb: z.number().min(0.1).default(10),
+    r2WritesMonthly: z.number().int().min(1).default(1_000_000),
+    r2ReadsMonthly: z.number().int().min(1).default(10_000_000),
+    neonStorageGb: z.number().min(0.1).default(0.5),
+    adzunaDaily: z.number().int().min(1).default(250),
+    joobleDaily: z.number().int().min(1).default(500),
+    vercelInvocationsMonthly: z.number().int().min(1).default(1_000_000),
+  }),
   marketplace: z.object({
     enabled: z.boolean().default(true),
     commissionPct: z.number().int().min(0).max(50).default(10),

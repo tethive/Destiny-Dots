@@ -5,6 +5,7 @@ import path from "node:path";
 import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env, features, isProduction } from "@/lib/env";
+import { trackUsage } from "@/server/usage";
 
 /**
  * Private object storage. Production uses any S3-compatible bucket
@@ -103,6 +104,7 @@ export function sniffMatches(mime: string, head: Uint8Array) {
 export async function createUploadTarget(key: string, mime: string) {
   assertStorage();
   if (!features.objectStorage) return { url: `/api/uploads/local?key=${encodeURIComponent(key)}`, method: "PUT" as const };
+  await trackUsage("r2", "writes");
   const url = await getSignedUrl(client(), new PutObjectCommand({ Bucket: env.S3_BUCKET, Key: key, ContentType: mime }), {
     expiresIn: 600,
   });
@@ -141,6 +143,7 @@ export async function readObject(key: string, range?: { start: number; end: numb
     const buf = await readFile(localPath(key));
     return range ? buf.subarray(range.start, range.end + 1) : buf;
   }
+  await trackUsage("r2", "reads");
   const res = await client().send(
     new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key, Range: range ? `bytes=${range.start}-${range.end}` : undefined }),
   );
@@ -154,6 +157,7 @@ export async function streamObject(key: string, range?: { start: number; end: nu
     const buf = await readObject(key, range);
     return new Response(new Uint8Array(buf)).body!;
   }
+  await trackUsage("r2", "reads");
   const res = await client().send(
     new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key, Range: range ? `bytes=${range.start}-${range.end}` : undefined }),
   );
@@ -166,5 +170,6 @@ export async function deleteObject(key: string) {
     await rm(localPath(key), { force: true });
     return;
   }
+  await trackUsage("r2", "writes");
   await client().send(new DeleteObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
 }

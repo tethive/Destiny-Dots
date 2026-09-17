@@ -18,6 +18,7 @@ const protectedPrefixes = [
   "/achievements",
   "/billing",
   "/invoices",
+  "/payment",
   "/settings",
   "/admin",
 ];
@@ -68,8 +69,17 @@ function contentSecurityPolicy(nonce: string) {
     .join("; ");
 }
 
+const maintenanceOpen = ["/maintenance", "/admin", "/login", "/forgot-password", "/reset-password"];
+
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  if (process.env.MAINTENANCE_MODE === "1" && !maintenanceOpen.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/maintenance";
+    url.search = "";
+    return NextResponse.rewrite(url, { status: 503, headers: { "Retry-After": "1800" } });
+  }
 
   if (protectedPrefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`)) && !getSessionCookie(request)) {
     const url = new URL("/login", request.url);

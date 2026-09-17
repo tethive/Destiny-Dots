@@ -10,6 +10,7 @@ import {
   FileText,
   FileUser,
   FolderKanban,
+  Gauge,
   Inbox,
   Receipt,
   RefreshCw,
@@ -101,6 +102,7 @@ export const adminNav: NavGroup[] = [
     label: "System",
     items: [
       { href: "/admin/settings", label: "Settings & audit", icon: FileText },
+      { href: "/admin/usage", label: "Usage & limits", icon: Gauge },
       { href: "/admin/security", label: "Security", icon: ShieldAlert },
     ],
   },

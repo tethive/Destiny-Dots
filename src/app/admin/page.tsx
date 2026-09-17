@@ -1,22 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Activity, BadgeIndianRupee, Sparkles, UserPlus, Users } from "lucide-react";
+import { Activity, AlertTriangle, BadgeIndianRupee, Sparkles, UserPlus, Users } from "lucide-react";
 import { TopPathsChart, TrendChart } from "@/components/admin/charts";
 import { PageHeader, StatCard } from "@/components/app/page-header";
 import { formatINR } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { getDropOffMatrix, getOverview } from "@/server/admin-stats";
+import { getUsageSummary, usageAlerts } from "@/server/usage";
 
 export const metadata: Metadata = { title: "Overview" };
 
 export default async function AdminOverviewPage() {
-  const [o, matrix] = await Promise.all([getOverview(), getDropOffMatrix(6)]);
+  const [o, matrix, usage] = await Promise.all([getOverview(), getDropOffMatrix(6), getUsageSummary()]);
+  const alerts = usageAlerts(usage.providers, usage.alertPct);
   const steps = ["bg-muted", "bg-primary/20", "bg-primary/40", "bg-primary/65", "bg-primary"];
   const level = (r: number) => (r <= 0 ? 0 : r < 0.25 ? 1 : r < 0.5 ? 2 : r < 0.75 ? 3 : 4);
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader title="Overview" description="Signups, subscribers, revenue and where students drop off." />
+
+      {alerts.length > 0 && (
+        <Link
+          href="/admin/usage"
+          className="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm hover:bg-amber-500/15"
+        >
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-400" />
+          <span>
+            <span className="font-medium">Some services are near their limits</span>
+            <span className="block text-muted-foreground">
+              {alerts.map((a) => `${a.provider} · ${a.label} (${a.period}): ${a.pct}%`).join(" · ")}
+            </span>
+          </span>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard label="Students" value={o.users.toLocaleString("en-IN")} icon={Users} />

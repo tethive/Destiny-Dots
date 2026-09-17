@@ -192,15 +192,15 @@ function UserMenu({ user, area }: { user: ShellUser; area: "student" | "admin" }
               )}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <div className="flex items-center justify-between px-2 py-1.5">
-              <span className="text-xs text-muted-foreground">Theme</span>
-              <ThemeSegmented />
+            <div className="space-y-1.5 px-2 py-2" onKeyDown={(e) => e.stopPropagation()}>
+              <p className="text-xs font-medium text-muted-foreground">Theme</p>
+              <ThemeSegmented fullWidth />
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={async () => {
                 await signOut();
-                router.push("/");
+                router.push("/signed-out");
                 router.refresh();
               }}
             >

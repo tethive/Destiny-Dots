@@ -300,3 +300,8 @@ you on the right side of publishers' copyright.
 - Seller bank/UPI details are encrypted (AES-256-GCM); every admin view of them is audit-logged.
 - `npm audit` reports advisories in the **Prisma CLI's** optional MySQL driver and config loader. They are build-time tools, not part of the
   running app (which uses PostgreSQL); upgrade Prisma when a patched release is available.
+
+## 10. Running the site
+
+- **Usage & limits** (Admin → System → Usage & limits): emails, file storage, database size, background jobs and import calls, compared with each service's free-plan limits. When any meter reaches the warning level (80% by default), the nightly maintenance job emails the admin inbox once that day. Change the limits there when you upgrade a plan. Counting starts from the release that added the page.
+- **Maintenance mode**: add `MAINTENANCE_MODE` = `1` in Vercel and redeploy. Visitors see a maintenance page (HTTP 503); `/admin` and sign-in stay reachable. Remove the variable and redeploy to reopen.

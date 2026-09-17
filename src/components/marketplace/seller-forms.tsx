@@ -280,7 +280,7 @@ export function ListingEditor({ project, limits }: { project: EditorProject | nu
 
             <div className="flex flex-wrap gap-2 rounded-2xl border bg-card p-5 shadow-xs">
               {["DRAFT", "REJECTED"].includes(project.status) && (
-                <ActionButton label="Submit for review" icon={Send} run={() => submitProject(project.id)} />
+                <ActionButton label="Submit for review" icon={Send} run={() => submitProject(project.id)} successHref={`/listing-submitted?id=${project.id}`} />
               )}
               {locked && <p className="text-sm text-muted-foreground">Waiting for review — usually within 2 working days.</p>}
               {project.status === "ARCHIVED" ? (
@@ -342,7 +342,19 @@ function RemoveFileButton({ id }: { id: string }) {
   );
 }
 
-function ActionButton({ label, icon: Icon, run, variant }: { label: string; icon: typeof Send; run: () => Promise<{ ok: boolean; message?: string; error?: string }>; variant?: "outline" }) {
+function ActionButton({
+  label,
+  icon: Icon,
+  run,
+  variant,
+  successHref,
+}: {
+  label: string;
+  icon: typeof Send;
+  run: () => Promise<{ ok: boolean; message?: string; error?: string }>;
+  variant?: "outline";
+  successHref?: string;
+}) {
   const [pending, start] = useTransition();
   const router = useRouter();
   return (
@@ -355,6 +367,7 @@ function ActionButton({ label, icon: Icon, run, variant }: { label: string; icon
         start(async () => {
           const res = await run();
           if (!res.ok) toast.error(res.error);
+          else if (successHref) return router.push(successHref);
           else toast.success(res.message);
           router.refresh();
         })

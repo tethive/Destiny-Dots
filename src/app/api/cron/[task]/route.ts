@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { cleanupImports, importJobs, importUpdates } from "@/server/importers";
 import { checkLinks } from "@/server/link-check";
+import { sendUsageAlertIfNeeded, trackUsage } from "@/server/usage";
 
 export const maxDuration = 300;
 
@@ -21,13 +22,14 @@ const tasks = {
   "import-jobs": async () => ({ reports: await importJobs() }),
   "import-updates": async () => ({ reports: await importUpdates() }),
   maintenance: async () => {
-    const [cleanup, links, abandoned] = await Promise.all([
+    const [cleanup, links, abandoned, usage] = await Promise.all([
       cleanupImports(),
       checkLinks(undefined, 60),
       // Checkouts that were opened but never paid.
       db.order.updateMany({ where: { status: "PENDING", createdAt: { lt: new Date(Date.now() - 2 * 86_400_000) } }, data: { status: "FAILED" } }),
+      sendUsageAlertIfNeeded(),
     ]);
-    return { cleanup, links, abandonedOrders: abandoned.count };
+    return { cleanup, links, abandonedOrders: abandoned.count, usage };
   },
 } as const;
 
@@ -36,6 +38,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/cron/[task]"
   const { task } = await ctx.params;
   const run = tasks[task as keyof typeof tasks];
   if (!run) return NextResponse.json({ error: "Unknown task" }, { status: 404 });
+  await trackUsage("vercel", "cron_runs");
   const started = Date.now();
   const result = await run();
   console.info(`[cron] ${task} finished in ${Date.now() - started}ms`, JSON.stringify(result));
