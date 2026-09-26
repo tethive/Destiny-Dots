@@ -75,6 +75,7 @@ export const settingSchemas = {
     neonStorageGb: z.number().min(0.1).default(0.5),
     adzunaDaily: z.number().int().min(1).default(250),
     joobleDaily: z.number().int().min(1).default(500),
+    geminiDaily: z.number().int().min(1).default(200),
     vercelInvocationsMonthly: z.number().int().min(1).default(1_000_000),
   }),
   marketplace: z.object({

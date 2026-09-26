@@ -307,3 +307,19 @@ you on the right side of publishers' copyright.
 - **Maintenance mode**: add `MAINTENANCE_MODE` = `1` in Vercel and redeploy. Visitors see a maintenance page (HTTP 503); `/admin` and sign-in stay reachable. Remove the variable and redeploy to reopen.
 - **Admin access**: the admin area returns "page not found" to anyone who isn't signed in as an admin on that browser. To open it, log in at `/login` with the admin account. You land in the admin panel, and the "Admin" button in the student app works too. Signing out hides it again. Bookmarked `/admin` links show "page not found" until you log in.
 - **Student accounts**: students can pause their account (Settings → Account); signing in again reactivates it. They can also delete it. Deleting removes their personal data, but invoices and payment records are kept for tax purposes. Admins see "Paused" or "Deleted by user" labels in Users.
+
+## 11. AI interview simulator (optional)
+
+Students with Pro can take mock interviews — aptitude, technical and coding — and get a scored report. It works without AI (the question bank plus rule-based scoring), and gets much better with a free Google key.
+
+1. Go to https://aistudio.google.com/apikey, sign in with a Google account and **Create API key**.
+2. Add it in Vercel → Settings → Environment Variables as **Sensitive**:
+   ```
+   GEMINI_API_KEY=...
+   ```
+   Optional: `GEMINI_MODEL` overrides the default (`gemini-2.5-flash`). If the default ever retires, the app asks Google which models the key can use and switches automatically.
+3. Redeploy. Admin → Usage & limits then shows a **Google Gemini** card; set the daily cap there to stay inside the free tier (200 requests/day by default). Past the cap, interviews keep working with rule-based scoring.
+
+**Questions** live in Admin → Interview bank: 87 ship with the app (30 aptitude, 45 technical across all domains, 12 coding). Edit or retire them there, or add your own. Retiring keeps a question out of new interviews without deleting past answers.
+
+**Access**: mock interviews need Pro (admins always have access, so you can test before payments are live — or grant Pro to a tester from Admin → Users). The question bank at `/interview/prep` is free for every signed-in student.

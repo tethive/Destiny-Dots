@@ -11,10 +11,10 @@ import { getSetting } from "@/server/settings";
  */
 
 export type UsageProvider =
-  "system" | "resend" | "r2" | "vercel" | "adzuna" | "jooble" | "remotive" | "devto" | "hackernews" | "rss" | "turnstile" | "razorpay";
+  "system" | "gemini" | "resend" | "r2" | "vercel" | "adzuna" | "jooble" | "remotive" | "devto" | "hackernews" | "rss" | "turnstile" | "razorpay";
 
 /** Today's date in India as a UTC midnight Date (the counter's day bucket). */
-function istDay(offsetDays = 0) {
+export function istDay(offsetDays = 0) {
   const ist = new Date(Date.now() + 330 * 60_000 + offsetDays * 86_400_000);
   return new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()));
 }
@@ -272,6 +272,25 @@ export async function getUsageSummary() {
           limit: null,
           unit: "count",
           period: "this month",
+        },
+      ],
+    },
+    {
+      id: "gemini",
+      name: "Google Gemini · AI interviews",
+      configured: features.ai,
+      dashboardUrl: "https://aistudio.google.com/app/apikey",
+      note: "Google caps free keys per day. When that cap is hit, interviews fall back to the question bank and rule-based scoring.",
+      meters: [
+        { label: "AI requests", used: today("gemini:calls"), limit: limits.geminiDaily, unit: "count", period: "today" },
+        { label: "AI requests", used: month("gemini:calls"), limit: null, unit: "count", period: "this month" },
+        {
+          label: "Rate-limited or failed",
+          used: month("gemini:rate_limited") + month("gemini:failed"),
+          limit: null,
+          unit: "count",
+          period: "this month",
+          hint: "Students still get their questions and a score",
         },
       ],
     },

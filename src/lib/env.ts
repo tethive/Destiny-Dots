@@ -56,6 +56,11 @@ const schema = z.object({
   /** Shared secret Vercel Cron sends as a Bearer token. */
   CRON_SECRET: optional,
 
+  /** Google AI Studio key for the interview simulator. */
+  GEMINI_API_KEY: optional,
+  /** Overrides the default Gemini model, e.g. when a newer flash model appears. */
+  GEMINI_MODEL: optional,
+
   ADZUNA_APP_ID: optional,
   ADZUNA_APP_KEY: optional,
   JOOBLE_API_KEY: optional,
@@ -111,4 +116,5 @@ export const features = {
   objectStorage: Boolean(env.S3_ENDPOINT && env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY),
   adzuna: Boolean(env.ADZUNA_APP_ID && env.ADZUNA_APP_KEY),
   jooble: Boolean(env.JOOBLE_API_KEY),
+  ai: Boolean(env.GEMINI_API_KEY),
 };

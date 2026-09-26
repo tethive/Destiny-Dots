@@ -60,6 +60,7 @@ model User {
   projectPurchases ProjectPurchase[]
   projectReviews   ProjectReview[]
   payouts          Payout[]
+  interviews       InterviewSession[]
 
   @@map("user")
 }
@@ -922,4 +923,111 @@ model UsageCounter {
 
   @@id([provider, metric, day])
   @@index([day])
+}
+
+/* -------------------------------------------------------------------------- */
+/* Interview preparation                                                       */
+/* -------------------------------------------------------------------------- */
+
+enum InterviewRound {
+  APTITUDE
+  TECHNICAL
+  CODING
+}
+
+enum InterviewKind {
+  MCQ
+  SHORT_ANSWER
+  CODING
+}
+
+enum InterviewStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+/// Curated question bank. Admins edit these; the AI only asks follow-ups.
+model InterviewQuestion {
+  id          String        @id @default(cuid())
+  round       InterviewRound
+  kind        InterviewKind
+  /// Empty for aptitude questions, which apply to every domain.
+  domainTags  String[]
+  level       Level         @default(BEGINNER)
+  topic       String
+  prompt      String
+  /// MCQ only.
+  options     String[]
+  answerIndex Int?
+  /// What a strong answer covers; shown after answering and used to grade.
+  modelAnswer String?
+  explanation String?
+  /// Coding questions.
+  starterCode String?
+  language    String?
+  hints       String[]
+  /// Rough minutes an interviewer would allow.
+  minutes     Int           @default(3)
+  isActive    Boolean       @default(true)
+  isSample    Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  answers     InterviewAnswer[]
+
+  @@index([round, level])
+  @@index([isActive])
+}
+
+/// One mock interview attempt.
+model InterviewSession {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round        InterviewRound
+  /// Domain the questions were drawn from; empty for mixed aptitude rounds.
+  domainTag    String?
+  level        Level           @default(BEGINNER)
+  status       InterviewStatus @default(IN_PROGRESS)
+  score        Int             @default(0)
+  maxScore     Int             @default(0)
+  /// AI summary of the whole round.
+  summary      String?
+  strengths    String[]
+  improvements String[]
+  aiModel      String?
+  startedAt    DateTime        @default(now())
+  completedAt  DateTime?
+  answers      InterviewAnswer[]
+
+  @@index([userId, startedAt])
+}
+
+/// One question inside a session, with the student's answer and its grade.
+model InterviewAnswer {
+  id           String             @id @default(cuid())
+  sessionId    String
+  session      InterviewSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId   String?
+  question     InterviewQuestion? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  order        Int
+  kind         InterviewKind
+  /// Snapshot, so edits to the bank never rewrite past interviews.
+  prompt       String
+  options      String[]
+  answerIndex  Int?
+  answerText   String?
+  language     String?
+  /// Follow-up asked by the AI after the main answer, and the reply to it.
+  followUp     String?
+  followUpText String?
+  score        Int                @default(0)
+  maxScore     Int                @default(10)
+  feedback     String?
+  isCorrect    Boolean?
+  secondsSpent Int?
+  answeredAt   DateTime?
+
+  @@unique([sessionId, order])
+  @@index([questionId])
 }

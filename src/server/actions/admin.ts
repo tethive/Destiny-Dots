@@ -785,3 +785,70 @@ export async function sendUsageTestEmail(): Promise<AdminResult> {
     ? { ok: true, message: `Test email sent to ${contactInbox()} — totals refreshed` }
     : { ok: false, error: "Resend didn't accept the email. Check the Resend dashboard for the reason." };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Interview question bank                                                     */
+/* -------------------------------------------------------------------------- */
+
+const interviewQuestionSchema = z
+  .object({
+    round: z.enum(["APTITUDE", "TECHNICAL", "CODING"]),
+    kind: z.enum(["MCQ", "SHORT_ANSWER", "CODING"]),
+    level: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]),
+    topic: z.string().trim().min(2, "Add a topic").max(80),
+    prompt: z.string().trim().min(10, "The question is too short").max(4000),
+    domainTags: z.array(z.string().trim()).default([]),
+    options: z.array(z.string().trim()).default([]),
+    answerIndex: z.coerce.number().int().min(0).max(9).nullable().default(null),
+    modelAnswer: z.string().trim().max(4000).optional(),
+    explanation: z.string().trim().max(2000).optional(),
+    starterCode: z.string().max(4000).optional(),
+    language: z.string().trim().max(40).optional(),
+    hints: z.array(z.string().trim()).default([]),
+    minutes: z.coerce.number().int().min(1).max(60).default(3),
+    isActive: z.boolean().default(true),
+  })
+  .refine((v) => v.kind !== "MCQ" || (v.options.filter(Boolean).length >= 2 && v.answerIndex !== null), {
+    message: "Multiple-choice questions need at least two options and a correct answer",
+  })
+  .refine((v) => v.kind === "MCQ" || Boolean(v.modelAnswer?.trim()), { message: "Add a model answer so answers can be graded" });
+
+export async function saveInterviewQuestion(id: string | null, input: z.input<typeof interviewQuestionSchema>): Promise<AdminResult> {
+  const admin = await requireAdmin();
+  const parsed = interviewQuestionSchema.safeParse(input);
+  if (!parsed.success) return fail(parsed.error);
+  const { options, hints, answerIndex, ...rest } = parsed.data;
+  const data = {
+    ...rest,
+    options: options.map((o) => o.trim()).filter(Boolean),
+    hints: hints.map((h) => h.trim()).filter(Boolean),
+    answerIndex: rest.kind === "MCQ" ? answerIndex : null,
+    isSample: false,
+  };
+
+  const question = id
+    ? await db.interviewQuestion.update({ where: { id }, data })
+    : await db.interviewQuestion.create({ data });
+  await audit(admin.id, id ? "interview.question.update" : "interview.question.create", "InterviewQuestion", question.id, { topic: question.topic });
+  revalidatePath("/admin/interview");
+  revalidatePath("/interview/prep");
+  return { ok: true, id: question.id, message: id ? "Question saved" : "Question added" };
+}
+
+export async function setInterviewQuestionActive(id: string, isActive: boolean): Promise<AdminResult> {
+  const admin = await requireAdmin();
+  await db.interviewQuestion.update({ where: { id }, data: { isActive } });
+  await audit(admin.id, isActive ? "interview.question.activate" : "interview.question.retire", "InterviewQuestion", id);
+  revalidatePath("/admin/interview");
+  revalidatePath("/interview/prep");
+  return { ok: true, message: isActive ? "Back in rotation" : "Retired — no longer asked" };
+}
+
+export async function deleteInterviewQuestion(id: string): Promise<AdminResult> {
+  const admin = await requireAdmin();
+  const question = await db.interviewQuestion.delete({ where: { id } });
+  await audit(admin.id, "interview.question.delete", "InterviewQuestion", id, { topic: question.topic });
+  revalidatePath("/admin/interview");
+  revalidatePath("/interview/prep");
+  return { ok: true, message: "Question deleted" };
+}

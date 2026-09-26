@@ -19,6 +19,7 @@ export type UsageLimits = {
   neonStorageGb: number;
   adzunaDaily: number;
   joobleDaily: number;
+  geminiDaily: number;
   vercelInvocationsMonthly: number;
 };
 
@@ -33,6 +34,7 @@ const fields: { key: keyof UsageLimits; label: string; step?: number }[] = [
   { key: "vercelInvocationsMonthly", label: "Vercel function calls / month" },
   { key: "adzunaDaily", label: "Adzuna calls / day" },
   { key: "joobleDaily", label: "Jooble calls / day" },
+  { key: "geminiDaily", label: "Gemini AI calls / day" },
 ];
 
 export function UsageLimitsForm({ initial }: { initial: UsageLimits }) {
