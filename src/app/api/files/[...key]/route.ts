@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSession } from "@/lib/session";
-import { streamObject } from "@/lib/storage";
+import { createDownloadUrl, streamObject } from "@/lib/storage";
 import { authorizeFile } from "@/server/files";
 
 /**
@@ -19,6 +19,17 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/files/[.
   if (!grant) return NextResponse.json({ error: "Not found" }, { status: session ? 404 : 401 });
 
   const download = request.nextUrl.searchParams.get("download") === "1" && grant.downloadable;
+  const range = request.headers.get("range")?.match(/^bytes=(\d+)-(\d*)$/);
+
+  // Every download, and anything large, goes straight to the bucket on a
+  // short-lived signed link: a function response is capped at 4.5 MB. Viewers
+  // that ask for byte ranges keep streaming through here, where the sandbox
+  // headers below still apply.
+  if (!range && (download || grant.size > 3 * 1024 * 1024)) {
+    const url = await createDownloadUrl(key, { fileName: grant.name, mime: grant.mime, download });
+    if (url) return NextResponse.redirect(url, { status: 302, headers: { "Cache-Control": "private, no-store" } });
+  }
+
   const headers = new Headers({
     "Content-Type": grant.mime,
     "Content-Disposition": `${download ? "attachment" : "inline"}; filename="${grant.name.replace(/[^\w.\- ]/g, "_")}"`,
@@ -31,7 +42,6 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/api/files/[.
   });
 
   // Range requests let the PDF and video viewers stream large files.
-  const range = request.headers.get("range")?.match(/^bytes=(\d+)-(\d*)$/);
   if (range && grant.size > 0) {
     const start = Number(range[1]);
     const end = Math.min(range[2] ? Number(range[2]) : start + 2 * 1024 * 1024 - 1, grant.size - 1);

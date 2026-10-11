@@ -164,6 +164,29 @@ export async function streamObject(key: string, range?: { start: number; end: nu
   return res.Body!.transformToWebStream();
 }
 
+/**
+ * A short-lived direct download link from the bucket.
+ *
+ * Serverless responses are capped at 4.5 MB, so large files must not be
+ * relayed through the app. The access check still happens on our side; this
+ * link only exists for a minute and carries the right name and type.
+ */
+export async function createDownloadUrl(key: string, options: { fileName: string; mime: string; download: boolean }) {
+  if (!features.objectStorage) return null;
+  await trackUsage("r2", "reads");
+  const safeName = options.fileName.replace(/[^\w.\- ]/g, "_");
+  return getSignedUrl(
+    client(),
+    new GetObjectCommand({
+      Bucket: env.S3_BUCKET,
+      Key: key,
+      ResponseContentType: options.mime,
+      ResponseContentDisposition: `${options.download ? "attachment" : "inline"}; filename="${safeName}"`,
+    }),
+    { expiresIn: 120 },
+  );
+}
+
 export async function deleteObject(key: string) {
   assertStorage();
   if (!features.objectStorage) {
