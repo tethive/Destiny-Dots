@@ -22,6 +22,9 @@ import {
 
 export type InterviewResult = { ok: true; message?: string } | { ok: false; error: string };
 
+/** Interviews one person can start in a rolling 24 hours (AI calls cost money). */
+const DAILY_INTERVIEW_LIMIT = 10;
+
 /** The simulator is part of Pro; admins always have it for testing. */
 async function requirePro() {
   const user = await requireUser("/interview");
@@ -44,6 +47,14 @@ export async function startInterview(input: z.input<typeof startSchema>): Promis
   const { round, level, domainTag } = parsed.data;
 
   if (roundConfig[round as RoundKey].needsDomain && !domainTag) return { ok: false, error: "Choose the role you're interviewing for." };
+
+  // A fair-use cap: each interview costs AI calls, and the daily budget is
+  // shared by everyone. Ten a day is far more than real practice needs.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const today = await db.interviewSession.count({ where: { userId: user.id, startedAt: { gte: since } } });
+  if (today >= DAILY_INTERVIEW_LIMIT) {
+    return { ok: false, error: `You've started ${DAILY_INTERVIEW_LIMIT} interviews today. Come back tomorrow — reviewing your reports beats another round.` };
+  }
 
   // One live session at a time keeps the history clean.
   await db.interviewSession.updateMany({ where: { userId: user.id, status: "IN_PROGRESS" }, data: { status: "ABANDONED", completedAt: new Date() } });

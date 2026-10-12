@@ -68,7 +68,15 @@ export async function pickQuestions(round: RoundKey, level: Level, domainTag: st
     db.interviewQuestion.findMany({ where: { ...where, level } }),
     db.interviewQuestion.findMany({ where: { ...where, NOT: { level } } }),
   ]);
-  const shuffle = <T>(rows: T[]) => rows.sort(() => Math.random() - 0.5);
+  // Fisher-Yates: sorting by a random comparator is biased, so repeat attempts
+  // would keep drawing the same questions.
+  const shuffle = <T>(rows: T[]) => {
+    for (let i = rows.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rows[i], rows[j]] = [rows[j], rows[i]];
+    }
+    return rows;
+  };
   return [...shuffle(atLevel), ...shuffle(others)].slice(0, config.questions);
 }
 
@@ -274,19 +282,19 @@ export function ruleSummary(score: number, maxScore: number, weakTopics: string[
 /* -------------------------------------------------------------------------- */
 
 export async function interviewStats(userId: string) {
-  const [sessions, best] = await Promise.all([
+  const [sessions, completed] = await Promise.all([
     db.interviewSession.findMany({
       where: { userId, status: "COMPLETED" },
       orderBy: { startedAt: "desc" },
       take: 20,
       select: { id: true, round: true, domainTag: true, level: true, score: true, maxScore: true, startedAt: true, completedAt: true },
     }),
-    db.interviewSession.aggregate({ where: { userId, status: "COMPLETED" }, _count: true, _avg: { score: true } }),
+    db.interviewSession.count({ where: { userId, status: "COMPLETED" } }),
   ]);
   const byRound = (round: RoundKey) => sessions.filter((s) => s.round === round);
   return {
     sessions,
-    completed: best._count,
+    completed,
     averagePct: sessions.length ? Math.round((sessions.reduce((n, s) => n + (s.maxScore ? s.score / s.maxScore : 0), 0) / sessions.length) * 100) : 0,
     lastByRound: Object.fromEntries((Object.keys(roundConfig) as RoundKey[]).map((r) => [r, byRound(r)[0] ?? null])),
   };

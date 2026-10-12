@@ -72,7 +72,7 @@ export const settingSchemas = {
     r2StorageGb: z.number().min(0.1).default(10),
     r2WritesMonthly: z.number().int().min(1).default(1_000_000),
     r2ReadsMonthly: z.number().int().min(1).default(10_000_000),
-    neonStorageGb: z.number().min(0.1).default(0.5),
+    neonStorageGb: z.number().min(0.1).default(1),
     adzunaDaily: z.number().int().min(1).default(250),
     joobleDaily: z.number().int().min(1).default(500),
     geminiDaily: z.number().int().min(1).default(200),

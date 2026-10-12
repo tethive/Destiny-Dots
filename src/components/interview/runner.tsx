@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { finishInterview, submitAnswer, submitFollowUp } from "@/server/actions/interview";
+import { abandonInterview, finishInterview, submitAnswer, submitFollowUp } from "@/server/actions/interview";
 
 export type RunnerQuestion = {
   order: number;
@@ -90,6 +90,11 @@ export function InterviewRunner({ sessionId, roundLabel, totalMinutes, startedAt
       if (res && !res.ok) toast.error(res.error);
     });
 
+  const discard = () => {
+    if (!confirm("Leave this interview? It won't be scored and you can't come back to it.")) return;
+    start(() => abandonInterview(sessionId));
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -113,9 +118,14 @@ export function InterviewRunner({ sessionId, roundLabel, totalMinutes, startedAt
       <QuestionCard key={question.order} question={question} pending={pending} onAnswer={answer} onReply={reply} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button variant="ghost" className="rounded-full" disabled={index === 0 || pending} onClick={() => setIndex((i) => i - 1)}>
-          Previous
-        </Button>
+        <span className="flex items-center gap-1">
+          <Button variant="ghost" className="rounded-full" disabled={index === 0 || pending} onClick={() => setIndex((i) => i - 1)}>
+            Previous
+          </Button>
+          <Button variant="ghost" size="sm" className="rounded-full text-muted-foreground" disabled={pending} onClick={discard}>
+            Leave
+          </Button>
+        </span>
         {index < items.length - 1 ? (
           <Button className="rounded-full" disabled={pending} onClick={() => setIndex((i) => i + 1)}>
             Next question <ChevronRight />
