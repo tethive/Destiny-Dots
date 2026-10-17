@@ -8,7 +8,7 @@ import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Level } from "@/generated/prisma/client";
-import { domains } from "@/lib/catalog";
+import { liveDomains } from "@/lib/catalog";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { browseProjects, type BrowseFilter } from "@/server/marketplace";
@@ -77,7 +77,7 @@ export default async function MarketplacePage(props: PageProps<"/marketplace">) 
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input name="q" defaultValue={filter.q} maxLength={80} placeholder="Search projects or tech (e.g. React)" className="h-10 rounded-full pl-9" />
         </form>
-        <FilterSelect param="domain" placeholder="All domains" value={filter.domain} options={domains.map((d) => ({ value: d.tag, label: d.name }))} />
+        <FilterSelect param="domain" placeholder="All domains" value={filter.domain} options={liveDomains().map((d) => ({ value: d.tag, label: d.name }))} />
         <FilterSelect
           param="level"
           placeholder="All levels"

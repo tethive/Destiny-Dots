@@ -38,6 +38,7 @@ import {
 import { signOut } from "@/lib/auth-client";
 import { adminNav, isNavActive, studentMobileNav, studentNav, type NavItem } from "@/lib/nav";
 import { cn, initials } from "@/lib/utils";
+import { liveDomains } from "@/lib/catalog";
 
 export type ShellUser = { name: string; email: string; image?: string | null; role?: string | null; isPro: boolean };
 
@@ -106,7 +107,7 @@ export function AppShell({
               <span className="flex items-center gap-1.5 font-medium">
                 <Sparkles className="size-4 text-primary" /> Go Pro
               </span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">Unlock every dot in all 11 domains.</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">Unlock every dot in all {liveDomains().length} domains.</span>
             </Link>
           )}
           <UserMenu user={user} area={area} />

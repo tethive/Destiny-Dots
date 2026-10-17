@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { authClient } from "@/lib/auth-client";
-import { domains } from "@/lib/catalog";
+import { liveDomains } from "@/lib/catalog";
 import { goalLabels, stageLabels, weeklyLabels } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { revokeMySession, updateProfile } from "@/server/actions/student";
@@ -78,7 +78,7 @@ export function ProfileForm({
         </div>
         <Label className="mt-5 block">Domains of interest</Label>
         <div className="mt-2 flex flex-wrap gap-2">
-          {domains.map((d) => {
+          {liveDomains().map((d) => {
             const on = form.domainInterests.includes(d.tag);
             return (
               <button

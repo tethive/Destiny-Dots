@@ -7,7 +7,7 @@ import { Checkpoint, CompleteButton, UnlockButton } from "@/components/app/learn
 import { DomainBadge, domainVars } from "@/components/domain";
 import { Button } from "@/components/ui/button";
 import type { ResourceType } from "@/generated/prisma/client";
-import { getDomain, type DomainTag } from "@/lib/catalog";
+import { getDomain, liveDomains, type DomainTag } from "@/lib/catalog";
 import { db } from "@/lib/db";
 import { skillLevelLabels } from "@/lib/labels";
 import { requireUser } from "@/lib/session";
@@ -91,7 +91,7 @@ export default async function DotPage(props: PageProps<"/learn/[slug]/[order]">)
           </span>
           <h2 className="mt-4 text-xl font-semibold">This dot is locked</h2>
           <p className="mt-1 max-w-md text-muted-foreground">
-            Unlock it on its own, unlock the whole {path.title} path, or go Pro for every dot across all 11 domains.
+            Unlock it on its own, unlock the whole {path.title} path, or go Pro for every dot across all {liveDomains().length} domains.
           </p>
           <UnlockButton className="mt-6 px-6" label="Unlock this dot" target={unlockTarget} prices={prices} ownedDots={access.dots.size} />
           <ul className="mt-8 w-full max-w-md space-y-2 text-left">

@@ -14,7 +14,7 @@ import { Counter } from "@/components/motion/counter";
 import { Marquee } from "@/components/motion/marquee";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
-import { domains, getDomain } from "@/lib/catalog";
+import { domains, getDomain, liveDomains } from "@/lib/catalog";
 import { publicDomainCounts, publicPaths, publicStats } from "@/server/catalog";
 import { displayPrices } from "@/server/payments";
 
@@ -29,16 +29,28 @@ export default async function HomePage() {
       {/* Domain strip */}
       <section className="border-b bg-muted/30 py-6">
         <Marquee duration={50}>
-          {domains.map((d) => (
-            <Link
-              key={d.tag}
-              href={`/resources/${d.tag}`}
-              className="flex shrink-0 items-center gap-2.5 rounded-full border bg-background py-1.5 pr-4 pl-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <DomainIcon tag={d.tag} className="size-7 rounded-full [&_svg]:size-3.5" />
-              {d.name}
-            </Link>
-          ))}
+          {domains.map((d) =>
+            d.status === "live" ? (
+              <Link
+                key={d.tag}
+                href={`/resources/${d.tag}`}
+                className="flex shrink-0 items-center gap-2.5 rounded-full border bg-background py-1.5 pr-4 pl-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <DomainIcon tag={d.tag} className="size-7 rounded-full [&_svg]:size-3.5" />
+                {d.name}
+              </Link>
+            ) : (
+              // Listed so visitors see what is coming, but there is nothing to open yet.
+              <span
+                key={d.tag}
+                className="flex shrink-0 items-center gap-2.5 rounded-full border border-dashed bg-background py-1.5 pr-4 pl-1.5 text-sm font-medium text-muted-foreground/70"
+              >
+                <DomainIcon tag={d.tag} className="size-7 rounded-full opacity-70 [&_svg]:size-3.5" />
+                {d.name}
+                <span className="font-mono text-[10px] tracking-wider uppercase">soon</span>
+              </span>
+            ),
+          )}
         </Marquee>
       </section>
 
@@ -140,7 +152,7 @@ export default async function HomePage() {
           <SectionHeading
             eyebrow="Pricing"
             title="Start free. Upgrade when you're ready."
-            description="Try any path for free, unlock a single dot when you need it, or go Pro for all 11 domains."
+            description={`Try any path for free, unlock a single dot when you need it, or go Pro for all ${liveDomains().length} domains.`}
           />
           <Reveal className="mt-12">
             <PricingPlans prices={prices} />

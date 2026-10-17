@@ -10,13 +10,14 @@ import { PageHero, SectionHeading } from "@/components/marketing/section";
 import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import { PathCard } from "@/components/path-card";
 import { Button } from "@/components/ui/button";
-import { domains, getDomain } from "@/lib/catalog";
+import { getDomain, liveDomains, type Domain } from "@/lib/catalog";
 import { publicPaths } from "@/server/catalog";
 
 export async function generateMetadata(props: PageProps<"/resources/[domain]">): Promise<Metadata> {
   const { domain: tag } = await props.params;
   const domain = getDomain(tag);
   if (!domain) return {};
+  if (domain.status !== "live") return { title: `${domain.name} — coming soon`, description: domain.description };
   return { title: `${domain.name} career paths`, description: domain.description };
 }
 
@@ -25,10 +26,14 @@ export default async function DomainPage(props: PageProps<"/resources/[domain]">
   const domain = getDomain(tag);
   if (!domain) notFound();
 
+  if (domain.status !== "live") return <ComingSoonDomain domain={domain} />;
+
   const domainPaths = (await publicPaths()).filter((p) => p.domainTag === domain.tag);
   const published = domainPaths.filter((p) => p.isPublished);
   const upcoming = domainPaths.filter((p) => !p.isPublished);
-  const others = domains.filter((d) => d.tag !== domain.tag).slice(0, 4);
+  const others = liveDomains()
+    .filter((d) => d.tag !== domain.tag)
+    .slice(0, 4);
 
   return (
     <>
@@ -97,7 +102,7 @@ export default async function DomainPage(props: PageProps<"/resources/[domain]">
             <SectionHeading align="left" eyebrow="Keep exploring" title="Other domains" />
             <Button asChild variant="outline" size="lg" className="hidden h-10 rounded-full px-4 sm:inline-flex">
               <Link href="/resources">
-                All {domains.length} domains <ArrowRight data-icon="inline-end" />
+                All {liveDomains().length} domains <ArrowRight data-icon="inline-end" />
               </Link>
             </Button>
           </div>
@@ -112,6 +117,47 @@ export default async function DomainPage(props: PageProps<"/resources/[domain]">
       </section>
 
       <CtaBand />
+    </>
+  );
+}
+
+/** Shown for domains whose roadmaps are still being written. */
+function ComingSoonDomain({ domain }: { domain: Domain }) {
+  return (
+    <>
+      <PageHero
+        tint={domainTheme[domain.tag].hex}
+        eyebrow={
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1">
+            <Link href="/resources" className="hover:text-foreground">
+              Resources
+            </Link>
+            <ChevronRight className="size-3.5" aria-hidden />
+            <span>{domain.name}</span>
+          </nav>
+        }
+        title={`${domain.name} — coming soon`}
+        description={`${domain.description} We're building these roadmaps now, and they'll open here as soon as the resources meet the bar.`}
+      />
+
+      <section className="container-page py-16 sm:py-20">
+        <SectionHeading align="left" eyebrow="Open now" title="Start with a domain that's ready" />
+        <Stagger className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {liveDomains().map((d) => (
+            <StaggerItem key={d.tag}>
+              <DomainCard domain={d} />
+            </StaggerItem>
+          ))}
+        </Stagger>
+        <div className="mt-10 flex flex-wrap gap-3">
+          <Button asChild size="lg" className="rounded-full">
+            <Link href="/resources">Browse all paths</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="rounded-full">
+            <Link href="/contact">Tell us to prioritise {domain.name}</Link>
+          </Button>
+        </div>
+      </section>
     </>
   );
 }

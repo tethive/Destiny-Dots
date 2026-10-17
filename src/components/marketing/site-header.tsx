@@ -12,7 +12,7 @@ import { ThemeSegmented, ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { useSession } from "@/lib/auth-client";
-import { domains } from "@/lib/catalog";
+import { domains, liveDomains } from "@/lib/catalog";
 import type { DomainCounts } from "@/server/catalog";
 import { marketingNav } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -145,25 +145,36 @@ export function SiteHeader({ domainCounts }: { domainCounts: DomainCounts }) {
               <div className="grid grid-cols-[1fr_280px] gap-3">
                 <div className="p-2">
                   <p className="px-2 font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
-                    {domains.length} domains
+                    {liveDomains().length} domains · more soon
                   </p>
                   <div className="mt-2 grid grid-cols-3 gap-0.5">
                     {domains.map((d) => {
                       const count = domainCounts[d.tag]?.paths ?? 0;
-                      return (
+                      const soon = d.status !== "live";
+                      const inner = (
+                        <>
+                          <DomainIcon tag={d.tag} className="size-9 [&_svg]:size-4" />
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-medium">{d.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {soon ? "Coming soon" : `${count} ${count === 1 ? "path" : "paths"}`}
+                            </span>
+                          </span>
+                        </>
+                      );
+                      // Unlaunched domains are listed, but there is nowhere to click.
+                      return soon ? (
+                        <div key={d.tag} className="flex items-center gap-3 rounded-xl p-2 opacity-60">
+                          {inner}
+                        </div>
+                      ) : (
                         <Link
                           key={d.tag}
                           href={`/resources/${d.tag}`}
                           onClick={() => setMegaOpen(false)}
                           className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-muted"
                         >
-                          <DomainIcon tag={d.tag} className="size-9 [&_svg]:size-4" />
-                          <span className="min-w-0">
-                            <span className="block truncate text-sm font-medium">{d.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {count} {count === 1 ? "path" : "paths"}
-                            </span>
-                          </span>
+                          {inner}
                         </Link>
                       );
                     })}

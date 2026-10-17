@@ -69,6 +69,10 @@ export interface Domain {
   certifications: string[];
 }
 
+/** Domains open to students. The rest show as "coming soon" until their content is ready. */
+export const liveDomains = () => domains.filter((d) => d.status === "live");
+export const isDomainLive = (tag: string) => domains.some((d) => d.tag === tag && d.status === "live");
+
 export const domains: Domain[] = [
   {
     tag: "cybersecurity",
@@ -107,7 +111,7 @@ export const domains: Domain[] = [
     tagline: "Design, deploy and run infrastructure at scale.",
     description:
       "AWS, Azure, Google Cloud and DevOps paths — the domain with the most remote-first openings.",
-    status: "live",
+    status: "coming-soon",
     certifications: ["AWS SAA-C03", "AZ-104", "Google ACE", "CKA"],
   },
   {
@@ -137,7 +141,7 @@ export const domains: Domain[] = [
     tagline: "Smart contracts and decentralised apps.",
     description:
       "Solidity, smart-contract security and Web3 frontends — built around testnets and real deployments.",
-    status: "live",
+    status: "coming-soon",
     certifications: [],
   },
   {
@@ -147,7 +151,7 @@ export const domains: Domain[] = [
     tagline: "Build products people use every day.",
     description:
       "Job-oriented frontend, backend and full-stack paths — curated, not just aggregated.",
-    status: "live",
+    status: "coming-soon",
     certifications: ["Meta Front-End Developer"],
   },
   {
@@ -157,7 +161,7 @@ export const domains: Domain[] = [
     tagline: "Connect sensors, devices and the cloud.",
     description:
       "Electronics, microcontrollers, wireless protocols and cloud dashboards for connected products.",
-    status: "live",
+    status: "coming-soon",
     certifications: [],
   },
   {
@@ -167,7 +171,7 @@ export const domains: Domain[] = [
     tagline: "Engineer the networks of the next decade.",
     description:
       "Mobile network architecture, 5G core, RAN and network automation for telecom careers.",
-    status: "live",
+    status: "coming-soon",
     certifications: ["Nokia Bell Labs 5G Professional"],
   },
   {
@@ -177,7 +181,7 @@ export const domains: Domain[] = [
     tagline: "Build immersive worlds and mixed reality.",
     description:
       "Unity, 3D fundamentals, interaction design and XR deployment for games, training and retail.",
-    status: "live",
+    status: "coming-soon",
     certifications: ["Unity Certified User: VR Developer"],
   },
 ];
@@ -1293,7 +1297,7 @@ export function getPath(domainTag: string, slug: string) {
 }
 
 export function getPublishedPaths() {
-  return paths.filter((p) => p.isPublished);
+  return paths.filter((p) => p.isPublished && isDomainLive(p.domainTag));
 }
 
 export function pathHours(path: CareerPath) {
@@ -1312,7 +1316,7 @@ export function domainHref(tag: DomainTag) {
 export function catalogStats() {
   const published = getPublishedPaths();
   return {
-    domains: domains.length,
+    domains: liveDomains().length,
     paths: published.length,
     dots: published.reduce((n, p) => n + p.dots.length, 0),
     certifications: new Set(published.flatMap((p) => p.dots.map((d) => d.certification).filter(Boolean))).size,

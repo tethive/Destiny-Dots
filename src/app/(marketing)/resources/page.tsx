@@ -8,11 +8,11 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { SearchLauncher } from "@/components/marketing/search-launcher";
 import { PageHero, SectionHeading } from "@/components/marketing/section";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
-import { domains } from "@/lib/catalog";
+import { domains, liveDomains } from "@/lib/catalog";
 import { publicPaths, publicStats } from "@/server/catalog";
 
 export const metadata: Metadata = {
-  title: "Resources — career paths for 11 tech domains",
+  title: `Resources — career paths for ${liveDomains().length} tech domains`,
   description:
     "Explore roadmaps for Cybersecurity, Ethical Hacking, AI/ML, Cloud, Data Engineering, Data Analysis, Blockchain, Full Stack, IoT, 5G and AR/VR.",
 };
@@ -73,7 +73,7 @@ export default async function ResourcesPage() {
             description="Filter by domain or search by role, tool or topic."
           />
           <Reveal className="mt-10">
-            <BrowseCatalog domains={domains} paths={paths} />
+            <BrowseCatalog domains={liveDomains()} paths={paths} />
           </Reveal>
         </div>
       </section>

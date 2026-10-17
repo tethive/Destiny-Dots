@@ -18,7 +18,7 @@ export const generalFaqs: FaqItem[] = [
   },
   {
     q: "Which domains are available?",
-    a: "Eleven: Cybersecurity, Ethical Hacking, AI & Machine Learning, Cloud Computing, Data Engineering, Data Analysis, Blockchain, Full Stack Development, IoT, 5G Technology and AR/VR. Each has at least one complete career path, with more paths being added.",
+    a: "Five are open today: Cybersecurity, Ethical Hacking, AI & Machine Learning, Data Engineering and Data Analysis. Cloud Computing, Full Stack Development, Blockchain, IoT, 5G and AR/VR are being built and will open as their roadmaps are ready.",
   },
   {
     q: "Do I get a certificate from Destiny Dots?",

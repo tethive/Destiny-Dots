@@ -158,12 +158,16 @@ export default async function AboutPage() {
       <section className="border-y bg-muted/30 py-14">
         <div className="container-page">
           <Reveal>
-            <p className="text-center text-sm text-muted-foreground">The domains we cover</p>
+            <p className="text-center text-sm text-muted-foreground">The domains we cover — the rest are on the way</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {domains.map((d) => (
-                <span key={d.tag} className="inline-flex items-center gap-2 rounded-full border bg-background py-1 pr-3.5 pl-1 text-sm font-medium">
+                <span
+                  key={d.tag}
+                  className={`inline-flex items-center gap-2 rounded-full border bg-background py-1 pr-3.5 pl-1 text-sm font-medium ${d.status === "live" ? "" : "border-dashed text-muted-foreground"}`}
+                >
                   <DomainIcon tag={d.tag} className="size-7 rounded-full [&_svg]:size-3.5" />
                   {d.name}
+                  {d.status !== "live" && <span className="font-mono text-[10px] tracking-wider uppercase">soon</span>}
                 </span>
               ))}
             </div>

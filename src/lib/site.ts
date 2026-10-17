@@ -57,8 +57,8 @@ export const footerNav = [
     links: [
       { href: "/resources/cybersecurity", label: "Cybersecurity" },
       { href: "/resources/ai-ml", label: "AI & ML" },
-      { href: "/resources/cloud-computing", label: "Cloud Computing" },
-      { href: "/resources/full-stack", label: "Full Stack" },
+      { href: "/resources/ethical-hacking", label: "Ethical Hacking" },
+      { href: "/resources/data-engineering", label: "Data Engineering" },
     ],
   },
   {

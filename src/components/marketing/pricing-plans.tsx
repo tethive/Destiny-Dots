@@ -7,6 +7,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatINR, planFeatures, savingPct, type Prices } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
+import { liveDomains } from "@/lib/catalog";
 
 type Interval = "monthly" | "yearly";
 
@@ -65,7 +66,7 @@ export function PricingPlans({ prices }: { prices: Prices }) {
           <Plan
             highlighted
             name="Pro"
-            blurb="Everything, across all 11 domains."
+            blurb={`Everything, across all ${liveDomains().length} domains.`}
             price={formatINR(interval === "monthly" ? prices.monthly : prices.yearly)}
             unit={interval === "monthly" ? "/ month" : "/ year"}
             note={

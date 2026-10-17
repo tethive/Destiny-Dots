@@ -6,7 +6,7 @@ import { DomainIcon } from "@/components/domain";
 import { FilterSelect } from "@/components/app/filter-select";
 import { Button } from "@/components/ui/button";
 import type { ExperienceLevel, Prisma, WorkMode } from "@/generated/prisma/client";
-import { domains, getDomain, type DomainTag } from "@/lib/catalog";
+import { getDomain, liveDomains, type DomainTag } from "@/lib/catalog";
 import { db } from "@/lib/db";
 import { levelLabels, workModeLabels } from "@/lib/labels";
 import { requireUser } from "@/lib/session";
@@ -52,7 +52,7 @@ export default async function JobsPage(props: PageProps<"/jobs">) {
       <PageHeader title="Job listings" description="Openings curated by our team for each domain. Applications happen on the employer's site." />
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <FilterSelect param="domain" placeholder="All domains" value={domain} options={domains.map((d) => ({ value: d.tag, label: d.name }))} />
+        <FilterSelect param="domain" placeholder="All domains" value={domain} options={liveDomains().map((d) => ({ value: d.tag, label: d.name }))} />
         <FilterSelect param="level" placeholder="Any level" value={level} options={Object.entries(levels).map(([value, label]) => ({ value, label }))} />
         <FilterSelect param="mode" placeholder="Any work mode" value={mode} options={Object.entries(modes).map(([value, label]) => ({ value, label }))} />
         <FilterSelect param="saved" placeholder="All jobs" value={saved ? "1" : undefined} options={[{ value: "1", label: "Saved jobs" }]} />

@@ -4,7 +4,7 @@ import { Check, Clock, Layers, Search } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { DomainIcon, domainVars } from "@/components/domain";
 import { Input } from "@/components/ui/input";
-import { domains, type DomainTag } from "@/lib/catalog";
+import { liveDomains, type DomainTag } from "@/lib/catalog";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -54,7 +54,7 @@ export default async function ExplorePage(props: PageProps<"/explore">) {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader title="Explore paths" description={`${paths.length} career paths across ${domains.length} domains.`} />
+      <PageHeader title="Explore paths" description={`${paths.length} career paths across ${liveDomains().length} domains.`} />
 
       <form className="relative mb-4 max-w-md" action="/explore">
         {domainFilter && <input type="hidden" name="domain" value={domainFilter} />}
@@ -64,7 +64,7 @@ export default async function ExplorePage(props: PageProps<"/explore">) {
 
       <div className="-mx-4 mb-8 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
         {chip("all", qs(), !domainFilter, "All")}
-        {domains.map((d) =>
+        {liveDomains().map((d) =>
           chip(
             d.tag,
             qs(d.tag),

@@ -7,7 +7,7 @@ import { Command } from "cmdk";
 import { CornerDownLeft, FileText, LogIn, Monitor, Moon, Search, Sun, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { DomainIcon } from "@/components/domain";
-import { domains, getPublishedPaths, pathHref, type DomainTag } from "@/lib/catalog";
+import { getPublishedPaths, liveDomains, pathHref, type DomainTag } from "@/lib/catalog";
 import { adminNav, studentNav } from "@/lib/nav";
 import { marketingNav } from "@/lib/site";
 
@@ -111,7 +111,7 @@ export function CommandMenuProvider({
               </Command.Group>
 
               <Command.Group heading="Domains" className={groupClass}>
-                {domains.map((d) => (
+                {liveDomains().map((d) => (
                   <Command.Item
                     key={d.tag}
                     value={`domain ${d.name} ${d.short}`}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Award, Clock } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/app/page-header";
 import { DomainIcon, domainVars } from "@/components/domain";
-import { domains, type DomainTag } from "@/lib/catalog";
+import { liveDomains, type DomainTag } from "@/lib/catalog";
 import { db } from "@/lib/db";
 import { difficultyLabel } from "@/lib/labels";
 import { requireUser } from "@/lib/session";
@@ -19,7 +19,7 @@ export default async function CertificationsPage(props: PageProps<"/certificatio
     where: { isPublished: true, ...(filter ? { domainTags: { has: filter } } : {}) },
     orderBy: { name: "asc" },
   });
-  const usedDomains = domains.filter((d) => d.certifications.length > 0);
+  const usedDomains = liveDomains().filter((d) => d.certifications.length > 0);
 
   return (
     <div className="mx-auto max-w-6xl">

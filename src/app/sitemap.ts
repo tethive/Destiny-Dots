@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { domains, pathHref } from "@/lib/catalog";
+import { domains, liveDomains, pathHref } from "@/lib/catalog";
 import { siteUrl } from "@/lib/site";
 import { getPublishedPaths } from "@/server/catalog";
 
@@ -16,7 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...pages,
-    ...domains.map((d) => ({
+    ...liveDomains().map((d) => ({
       url: `${siteUrl}/resources/${d.tag}`,
       changeFrequency: "weekly" as const,
       priority: 0.7,

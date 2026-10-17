@@ -10,7 +10,7 @@ import { SplitText } from "@/components/motion/reveal";
 import { ProgressRing } from "@/components/progress-ring";
 import { Globe } from "@/components/three/globe";
 import { Button } from "@/components/ui/button";
-import { domains } from "@/lib/catalog";
+import { liveDomains } from "@/lib/catalog";
 import type { DomainCounts } from "@/server/catalog";
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -21,11 +21,11 @@ export function HomeHero({ stats, domainCounts }: { stats: { domains: number; pa
 
   useEffect(() => {
     if (reduce) return;
-    const id = setInterval(() => setActive((i) => (i + 1) % domains.length), 3400);
+    const id = setInterval(() => setActive((i) => (i + 1) % liveDomains().length), 3400);
     return () => clearInterval(id);
   }, [reduce]);
 
-  const domain = domains[active];
+  const domain = liveDomains()[active];
   const { paths: pathCount, dots } = domainCounts[domain.tag] ?? { paths: 0, dots: 0 };
 
   const fade = (delay: number) =>
@@ -58,8 +58,8 @@ export function HomeHero({ stats, domainCounts }: { stats: { domains: number; pa
           </h1>
 
           <motion.p {...fade(0.4)} className="mt-6 max-w-xl text-base leading-7 text-pretty text-muted-foreground sm:text-lg sm:leading-8">
-            Structured career roadmaps across {stats.domains} tech domains — from cybersecurity and AI to 5G and AR/VR.
-            Every milestone mapped. Every resource hand-picked.
+            Structured career roadmaps across {stats.domains} tech domains — cybersecurity, ethical hacking, AI, data
+            engineering and data analysis. Every milestone mapped. Every resource hand-picked.
           </motion.p>
 
           <motion.div {...fade(0.5)} className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -114,7 +114,7 @@ export function HomeHero({ stats, domainCounts }: { stats: { domains: number; pa
                 </motion.div>
               </AnimatePresence>
               <div className="mt-3 flex gap-1" aria-hidden>
-                {domains.map((d, i) => (
+                {liveDomains().map((d, i) => (
                   <span key={d.tag} className={`h-1 flex-1 rounded-full transition-colors ${i === active ? "bg-primary" : "bg-border"}`} />
                 ))}
               </div>

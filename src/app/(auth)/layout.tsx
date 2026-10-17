@@ -7,9 +7,10 @@ import { ProgressRing } from "@/components/progress-ring";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
+import { liveDomains } from "@/lib/catalog";
 
 const points = [
-  "Roadmaps across 11 tech domains",
+  `Roadmaps across ${liveDomains().length} tech domains`,
   "Hand-picked resources, not endless search results",
   "Progress saved dot by dot",
 ];

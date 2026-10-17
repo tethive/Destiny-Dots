@@ -7,7 +7,7 @@ import { ArrowLeft, ArrowRight, Briefcase, Check, Clock, Compass, GraduationCap,
 import { toast } from "sonner";
 import { DomainIcon } from "@/components/domain";
 import { Button } from "@/components/ui/button";
-import { domains } from "@/lib/catalog";
+import { liveDomains } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 import { saveOnboarding, skipOnboarding } from "@/server/actions/student";
 
@@ -121,7 +121,7 @@ export function OnboardingQuiz({
 
             {step === 1 && (
               <div className="grid gap-2 sm:grid-cols-2">
-                {domains.map((d) => {
+                {liveDomains().map((d) => {
                   const on = interests.includes(d.tag);
                   return (
                     <Choice

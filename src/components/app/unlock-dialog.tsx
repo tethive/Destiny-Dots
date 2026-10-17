@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { formatINR, savingPct } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
 import { startSubscription, startUnlock } from "@/server/actions/student";
+import { liveDomains } from "@/lib/catalog";
 
 export type UnlockTarget = { pathId: string; pathTitle: string; dotId?: string; dotOrder?: number; dotTitle?: string };
 export type Prices = { dot: number; path: number; monthly: number; yearly: number };
@@ -64,7 +65,7 @@ export function UnlockDialog({
             <span className="absolute -top-2.5 right-4 rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
               Best value
             </span>
-            <p className="font-semibold">Pro — every dot, all 11 domains</p>
+            <p className="font-semibold">Pro — every dot, all {liveDomains().length} domains</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {(["MONTHLY", "YEARLY"] as const).map((i) => (
                 <button

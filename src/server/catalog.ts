@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { Level as DbLevel, Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
-import type { CareerPath, Level, ResourceType } from "@/lib/catalog";
+import { isDomainLive, liveDomains, type CareerPath, type Level, type ResourceType } from "@/lib/catalog";
 
 const levelLabel: Record<DbLevel, Level> = { BEGINNER: "Beginner", INTERMEDIATE: "Intermediate", ADVANCED: "Advanced" };
 
@@ -68,11 +68,12 @@ export const getAllPathsLite = cache(async () =>
   }),
 );
 
-/** Public helpers mirroring the old static catalogue API. */
+/** Public helpers mirroring the old static catalogue API. Unlaunched domains stay out of public listings. */
 export async function publicPaths() {
-  const [published, all] = await Promise.all([getPublishedPaths(), getAllPathsLite()]);
+  const [publishedAll, all] = await Promise.all([getPublishedPaths(), getAllPathsLite()]);
+  const published = publishedAll.filter((p) => isDomainLive(p.domainTag));
   const upcoming = all
-    .filter((p) => !p.isPublished)
+    .filter((p) => !p.isPublished && isDomainLive(p.domainTag))
     .map<CareerPath>((p) => ({
       slug: p.slug,
       domainTag: p.domainTag as CareerPath["domainTag"],
@@ -89,9 +90,9 @@ export async function publicPaths() {
 }
 
 export async function publicStats() {
-  const published = await getPublishedPaths();
+  const published = (await getPublishedPaths()).filter((p) => isDomainLive(p.domainTag));
   return {
-    domains: 11,
+    domains: liveDomains().length,
     paths: published.length,
     dots: published.reduce((n, p) => n + p.dots.length, 0),
     certifications: new Set(published.flatMap((p) => p.dots.map((d) => d.certification).filter(Boolean))).size,
@@ -102,7 +103,7 @@ export type DomainCounts = Record<string, { paths: number; dots: number }>;
 
 /** Published path and dot counts per domain, for navigation and hero cards. */
 export async function publicDomainCounts(): Promise<DomainCounts> {
-  const published = await getPublishedPaths();
+  const published = (await getPublishedPaths()).filter((p) => isDomainLive(p.domainTag));
   return published.reduce<DomainCounts>((m, p) => {
     const c = (m[p.domainTag] ??= { paths: 0, dots: 0 });
     c.paths += 1;

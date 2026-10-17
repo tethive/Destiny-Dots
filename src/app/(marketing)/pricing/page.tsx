@@ -8,6 +8,7 @@ import { PageHero, SectionHeading } from "@/components/marketing/section";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { formatINR, pricing } from "@/lib/pricing";
 import { displayPrices, paymentsAvailable } from "@/server/payments";
+import { liveDomains } from "@/lib/catalog";
 
 export async function generateMetadata(): Promise<Metadata> {
   const prices = await displayPrices();
@@ -42,7 +43,7 @@ export default async function PricingPage() {
         eyebrow="Pricing · INR · UPI ready"
         title="Pay for progress,"
         highlight="not promises."
-        description="Every path starts free. Unlock a single dot when you need it, or go Pro for all 11 domains."
+        description={`Every path starts free. Unlock a single dot when you need it, or go Pro for all ${liveDomains().length} domains.`}
       />
 
       <section className="relative -mt-px pb-20 pt-16 sm:pb-24">
