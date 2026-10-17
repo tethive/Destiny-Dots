@@ -39,6 +39,10 @@ export interface Dot {
   hasCheckpoint: boolean;
   /** Present when the milestone is a certification (links to cert guides). */
   certification?: string;
+  /** Stable topic id; shared-module topics carry the same key in every path. */
+  topicKey?: string;
+  /** Shared module this dot came from, e.g. "S4". */
+  moduleCode?: string;
   /** Only the free dots expose their resource list to visitors. */
   resources?: Resource[];
 }

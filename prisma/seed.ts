@@ -10,7 +10,8 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { PrismaClient, type ResourceType } from "../src/generated/prisma/client";
-import { paths } from "../src/lib/catalog";
+import { buildCurriculum } from "../src/content/curriculum-build";
+import { type CareerPath, type Dot, paths } from "../src/lib/catalog";
 import { pricing } from "../src/lib/pricing";
 import { certifications, jobs, quizzes, updates } from "./seed-content";
 
@@ -31,9 +32,47 @@ const searchUrl = (type: string, q: string) =>
 
 const levelMap = { Beginner: "BEGINNER", Intermediate: "INTERMEDIATE", Advanced: "ADVANCED" } as const;
 
+/** Dev-only sample resources would be absurd on 3,819 dots, so only free ones get them. */
+const SAMPLE_RESOURCES_PER_FREE_DOT = 3;
+
+/**
+ * The launch domains come from the curriculum document; the domains still being
+ * written keep their outline from the static catalogue so dev has something to
+ * click through.
+ */
+function seedPaths(): CareerPath[] {
+  const curriculum = buildCurriculum();
+  const launchDomains = new Set(curriculum.map((p) => p.domainTag));
+  const fromCurriculum = curriculum.map<CareerPath>((p) => ({
+    slug: p.slug,
+    domainTag: p.domainTag,
+    title: p.title,
+    summary: p.summary,
+    level: p.level,
+    duration: p.duration,
+    roles: p.roles,
+    outcomes: p.outcomes,
+    isPublished: true,
+    dots: p.dots.map<Dot>((d) => ({
+      order: d.order,
+      title: d.title,
+      description: d.description,
+      hours: d.hours,
+      isFree: d.isFree,
+      certification: d.certification,
+      topicKey: d.topicKey,
+      moduleCode: d.moduleCode,
+      resourceCount: d.isFree ? SAMPLE_RESOURCES_PER_FREE_DOT : 0,
+      hasCheckpoint: false,
+    })),
+  }));
+  return [...fromCurriculum, ...paths.filter((p) => !launchDomains.has(p.domainTag))];
+}
+
 async function seedCatalogue() {
   let dotCount = 0;
-  for (const p of paths) {
+  const allPaths = seedPaths();
+  for (const p of allPaths) {
     const path = await db.careerPath.upsert({
       where: { slug: p.slug },
       update: {},
@@ -63,6 +102,8 @@ async function seedCatalogue() {
           hours: d.hours,
           isFree: d.isFree,
           certification: d.certification,
+          topicKey: d.topicKey,
+          moduleCode: d.moduleCode,
         },
       });
       dotCount++;
@@ -102,7 +143,7 @@ async function seedCatalogue() {
       await db.quizQuestion.createMany({ data: quiz.questions.map((q, i) => ({ ...q, dotId: dot.id, order: i + 1 })) });
     }
   }
-  console.log(`✓ Catalogue: ${paths.length} paths, ${dotCount} new dots`);
+  console.log(`✓ Catalogue: ${allPaths.length} paths, ${dotCount} new dots`);
 }
 
 async function seedCommerce() {
