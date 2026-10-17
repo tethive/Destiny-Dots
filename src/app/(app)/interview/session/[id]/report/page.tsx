@@ -11,12 +11,15 @@ import { skillLevelLabels } from "@/lib/labels";
 import { requireUser } from "@/lib/session";
 import { getSession, roundConfig, type RoundKey } from "@/server/interviews";
 import { cn } from "@/lib/utils";
+import { interviewPrepEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Interview report", robots: { index: false } };
 
 const when = (d: Date) => d.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 
 export default async function InterviewReportPage(props: PageProps<"/interview/session/[id]/report">) {
+  // Built, not launched yet — see lib/flags.
+  if (!interviewPrepEnabled) notFound();
   const { id } = await props.params;
   const user = await requireUser(`/interview/session/${id}/report`);
   const session = await getSession(user.id, id);

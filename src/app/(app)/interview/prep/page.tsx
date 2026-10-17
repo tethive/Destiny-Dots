@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { BookOpenCheck, ChevronLeft } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/app/page-header";
 import { FilterSelect } from "@/components/app/filter-select";
+import { StudyMaterialList, type StudyMaterial } from "@/components/interview/study-material";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Prisma } from "@/generated/prisma/client";
@@ -10,14 +12,18 @@ import { domains } from "@/lib/catalog";
 import { db } from "@/lib/db";
 import { skillLevelLabels } from "@/lib/labels";
 import { requireUser } from "@/lib/session";
+import { presentResource } from "@/lib/embed";
 import { roundConfig, type RoundKey } from "@/server/interviews";
 import { cn } from "@/lib/utils";
+import { interviewPrepEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Interview question bank" };
 
 const PAGE_SIZE = 25;
 
 export default async function InterviewPrepPage(props: PageProps<"/interview/prep">) {
+  // Built, not launched yet — see lib/flags.
+  if (!interviewPrepEnabled) notFound();
   await requireUser("/interview/prep");
   const sp = await props.searchParams;
   const round = typeof sp.round === "string" && sp.round in roundConfig ? (sp.round as RoundKey) : undefined;
@@ -31,11 +37,28 @@ export default async function InterviewPrepPage(props: PageProps<"/interview/pre
     ...(domain ? { domainTags: { has: domain } } : {}),
     ...(level ? { level: level as Prisma.EnumLevelFilter["equals"] } : {}),
   };
-  const [questions, total] = await Promise.all([
+  const [materials, questions, total] = await Promise.all([
+    db.interviewMaterial.findMany({
+      where: { isActive: true, ...(round ? { round } : {}), ...(domain ? { OR: [{ domainTags: { has: domain } }, { domainTags: { isEmpty: true } }] } : {}) },
+      orderBy: [{ round: "asc" }, { order: "asc" }, { createdAt: "asc" }],
+    }),
     db.interviewQuestion.findMany({ where, orderBy: [{ round: "asc" }, { topic: "asc" }], take: PAGE_SIZE, skip: (page - 1) * PAGE_SIZE }),
     db.interviewQuestion.count({ where }),
   ]);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const study: StudyMaterial[] = materials.map((m) => {
+    const shown = presentResource({ url: m.url, embeddable: true });
+    return {
+      id: m.id,
+      round: m.round,
+      kind: m.kind,
+      title: m.title,
+      description: m.description,
+      source: m.source,
+      url: m.url,
+      embedSrc: shown.kind === "video-embed" || shown.kind === "doc-embed" ? shown.src : null,
+    };
+  });
   const query = (next: Record<string, string | undefined>) => {
     const params = new URLSearchParams();
     for (const [k, v] of Object.entries({ round, domain, level, ...next })) if (v) params.set(k, String(v));
@@ -72,6 +95,17 @@ export default async function InterviewPrepPage(props: PageProps<"/interview/pre
         <span className="ml-auto text-sm text-muted-foreground">{total} questions</span>
       </div>
 
+      {study.length > 0 && (
+        <section className="mb-8">
+          <h2 className="font-semibold">Study material</h2>
+          <p className="mt-1 mb-3 text-sm text-muted-foreground">
+            Hand-picked guides, videos and practice sets from across the web. They open at the source, so the people who made them get the credit.
+          </p>
+          <StudyMaterialList items={study} />
+        </section>
+      )}
+
+      <h2 className="mb-3 font-semibold">Practice questions</h2>
       {questions.length === 0 ? (
         <EmptyState icon={BookOpenCheck} title="No questions yet" description="Try another round or role — the bank is still growing." />
       ) : (

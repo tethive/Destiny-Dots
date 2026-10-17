@@ -941,6 +941,11 @@ enum InterviewKind {
   CODING
 }
 
+enum InterviewMode {
+  TEXT
+  VOICE
+}
+
 enum InterviewStatus {
   IN_PROGRESS
   COMPLETED
@@ -989,6 +994,8 @@ model InterviewSession {
   domainTag    String?
   level        Level           @default(BEGINNER)
   status       InterviewStatus @default(IN_PROGRESS)
+  /// VOICE sessions are spoken aloud and answered by dictation.
+  mode         InterviewMode   @default(TEXT)
   score        Int             @default(0)
   maxScore     Int             @default(0)
   /// AI summary of the whole round.
@@ -1030,4 +1037,34 @@ model InterviewAnswer {
 
   @@unique([sessionId, order])
   @@index([questionId])
+}
+
+enum InterviewMaterialKind {
+  VIDEO
+  DOC
+  PRACTICE
+  LINK
+}
+
+/// Study material shown in the interview prep area: videos that play inside
+/// the app, sheets and PDFs that open at their source, and practice sites.
+model InterviewMaterial {
+  id            String                @id @default(cuid())
+  round         InterviewRound
+  kind          InterviewMaterialKind @default(LINK)
+  title         String
+  description   String?
+  /// Credit for whoever made it, e.g. "CareerRide" or "takeuforward".
+  source        String?
+  url           String
+  /// Empty means it suits every role.
+  domainTags    String[]
+  order         Int                   @default(0)
+  isActive      Boolean               @default(true)
+  linkStatus    LinkStatus            @default(UNCHECKED)
+  lastCheckedAt DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@index([round, isActive])
 }

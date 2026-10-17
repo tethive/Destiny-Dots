@@ -852,3 +852,41 @@ export async function deleteInterviewQuestion(id: string): Promise<AdminResult> 
   revalidatePath("/interview/prep");
   return { ok: true, message: "Question deleted" };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Interview study material                                                    */
+/* -------------------------------------------------------------------------- */
+
+const materialSchema = z.object({
+  round: z.enum(["APTITUDE", "TECHNICAL", "CODING"]),
+  kind: z.enum(["VIDEO", "DOC", "PRACTICE", "LINK"]),
+  title: z.string().trim().min(3, "Add a title").max(120),
+  description: z.string().trim().max(400).optional(),
+  source: z.string().trim().max(60).optional(),
+  url: z.url("Add a valid link"),
+  domainTags: z.array(z.string().trim()).default([]),
+  order: z.coerce.number().int().min(0).max(999).default(0),
+  isActive: z.boolean().default(true),
+});
+
+export async function saveInterviewMaterial(id: string | null, input: z.input<typeof materialSchema>): Promise<AdminResult> {
+  const admin = await requireAdmin();
+  const parsed = materialSchema.safeParse(input);
+  if (!parsed.success) return fail(parsed.error);
+  const data = { ...parsed.data, domainTags: parsed.data.domainTags.filter(Boolean) };
+
+  const material = id ? await db.interviewMaterial.update({ where: { id }, data }) : await db.interviewMaterial.create({ data });
+  await audit(admin.id, id ? "interview.material.update" : "interview.material.create", "InterviewMaterial", material.id, { title: material.title });
+  revalidatePath("/admin/interview");
+  revalidatePath("/interview/prep");
+  return { ok: true, id: material.id, message: id ? "Material saved" : "Material added" };
+}
+
+export async function deleteInterviewMaterial(id: string): Promise<AdminResult> {
+  const admin = await requireAdmin();
+  const material = await db.interviewMaterial.delete({ where: { id } });
+  await audit(admin.id, "interview.material.delete", "InterviewMaterial", id, { title: material.title });
+  revalidatePath("/admin/interview");
+  revalidatePath("/interview/prep");
+  return { ok: true, message: "Material removed" };
+}

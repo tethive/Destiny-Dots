@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronRight, Clock, CornerDownRight, Flag, LoaderCircle,
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MicButton, SelfView, SpeakerToggle, useDictation, useInterviewerVoice } from "@/components/interview/voice";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { abandonInterview, finishInterview, submitAnswer, submitFollowUp } from "@/server/actions/interview";
@@ -34,6 +35,8 @@ type Props = {
   totalMinutes: number;
   startedAt: string;
   questions: RunnerQuestion[];
+  /** Voice mode: the interviewer speaks and the answer is dictated. */
+  voice?: boolean;
 };
 
 /** Time left in the round, counted from when the session was created. */
@@ -50,13 +53,15 @@ function useCountdown(startedAt: string, totalMinutes: number) {
   return { label: `${Math.floor(left / 60_000)}:${String(Math.floor((left % 60_000) / 1000)).padStart(2, "0")}`, over: left === 0 };
 }
 
-export function InterviewRunner({ sessionId, roundLabel, totalMinutes, startedAt, questions }: Props) {
+export function InterviewRunner({ sessionId, roundLabel, totalMinutes, startedAt, questions, voice = false }: Props) {
   const router = useRouter();
   const [items, setItems] = useState(questions);
   const firstOpen = items.findIndex((q) => !q.answeredAt);
   const [index, setIndex] = useState(firstOpen === -1 ? items.length - 1 : firstOpen);
   const [pending, start] = useTransition();
+  const [speechOn, setSpeechOn] = useState(voice);
   const timer = useCountdown(startedAt, totalMinutes);
+  const interviewer = useInterviewerVoice(speechOn);
 
   const question = items[index];
   const allAnswered = items.every((i) => i.answeredAt);
@@ -104,8 +109,20 @@ export function InterviewRunner({ sessionId, roundLabel, totalMinutes, startedAt
             Question {index + 1} of {items.length}
           </span>
         </div>
-        <span className={cn("flex items-center gap-1.5 text-sm tabular-nums", timer.over ? "font-medium text-destructive" : "text-muted-foreground")}>
-          <Clock className="size-4" /> {timer.over ? "Time's up — finish when ready" : `${timer.label} left`}
+        <span className="flex items-center gap-3">
+          {voice && (
+            <SpeakerToggle
+              on={speechOn}
+              speaking={interviewer.speaking}
+              onToggle={() => {
+                interviewer.stop();
+                setSpeechOn((v) => !v);
+              }}
+            />
+          )}
+          <span className={cn("flex items-center gap-1.5 text-sm tabular-nums", timer.over ? "font-medium text-destructive" : "text-muted-foreground")}>
+            <Clock className="size-4" /> {timer.over ? "Time's up — finish when ready" : `${timer.label} left`}
+          </span>
         </span>
       </div>
 
@@ -115,7 +132,25 @@ export function InterviewRunner({ sessionId, roundLabel, totalMinutes, startedAt
         ))}
       </div>
 
-      <QuestionCard key={question.order} question={question} pending={pending} onAnswer={answer} onReply={reply} />
+      <div className={cn(voice && "grid gap-4 lg:grid-cols-[1fr_220px] lg:items-start")}>
+        <QuestionCard
+          key={question.order}
+          question={question}
+          pending={pending}
+          onAnswer={answer}
+          onReply={reply}
+          voice={voice}
+          speak={interviewer.speak}
+        />
+        {voice && (
+          <aside className="order-first space-y-3 lg:order-last lg:sticky lg:top-4">
+            <SelfView />
+            <p className="text-xs text-muted-foreground">
+              Speak your answer as you would to a real interviewer. The words appear below — tidy them up before you submit if dictation mishears you.
+            </p>
+          </aside>
+        )}
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="flex items-center gap-1">
@@ -146,19 +181,34 @@ function QuestionCard({
   pending,
   onAnswer,
   onReply,
+  voice = false,
+  speak,
 }: {
   question: RunnerQuestion;
   pending: boolean;
   onAnswer: (payload: { text?: string; index?: number | null; secondsSpent: number }) => void;
   onReply: (text: string) => void;
+  voice?: boolean;
+  speak?: (text: string) => void;
 }) {
   const [text, setText] = useState(question.kind === "CODING" ? (question.starterCode ?? "") : "");
   const [choice, setChoice] = useState<number | null>(null);
   const [followUpText, setFollowUpText] = useState("");
   const openedAt = useRef(0);
+  const dictation = useDictation((heard) => setText((current) => (current ? `${current} ${heard}` : heard)));
   useEffect(() => {
     openedAt.current = Date.now();
   }, []);
+
+  // Read the question out once when it appears.
+  useEffect(() => {
+    if (voice && !question.answeredAt) speak?.(question.prompt);
+  }, [voice, speak, question.prompt, question.answeredAt]);
+
+  // And the verdict, once it lands.
+  useEffect(() => {
+    if (voice && question.answeredAt && question.feedback) speak?.(question.followUp ? `${question.feedback} ${question.followUp}` : question.feedback);
+  }, [voice, speak, question.answeredAt, question.feedback, question.followUp]);
 
   const answered = Boolean(question.answeredAt);
   const canSubmit = question.kind === "MCQ" ? choice !== null : text.trim().length > 0;
@@ -198,6 +248,23 @@ function QuestionCard({
               approach in comments, and the reviewer judges correctness, complexity and edge cases.
             </p>
           )}
+          {voice && !answered && (
+            <div className="flex flex-wrap items-center gap-3">
+              <MicButton dictation={dictation} disabled={pending} />
+              {dictation.listening && (
+                <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="relative flex size-2.5">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-destructive/70" />
+                    <span className="relative inline-flex size-2.5 rounded-full bg-destructive" />
+                  </span>
+                  Listening…
+                </span>
+              )}
+              {!dictation.supported && <span className="text-sm text-muted-foreground">This browser can&apos;t dictate — type your answer instead.</span>}
+            </div>
+          )}
+          {dictation.error && <p className="text-sm text-destructive">{dictation.error}</p>}
+          {dictation.interim && <p className="text-sm text-muted-foreground italic">{dictation.interim}</p>}
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

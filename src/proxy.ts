@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 import { ADMIN_GATE_COOKIE, verifyAdminGate } from "@/lib/admin-gate";
+import { interviewPrepEnabled } from "@/lib/flags";
 
 /** Routes that need a signed-in user. Real authorisation (role, bans) happens in server layouts. */
 const protectedPrefixes = [
@@ -73,6 +74,14 @@ const maintenanceOpen = ["/maintenance", "/admin", "/login", "/welcome", "/forgo
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // Interview prep is built but not launched: it simply does not exist yet.
+  if (!interviewPrepEnabled && (pathname === "/interview" || pathname.startsWith("/interview/") || pathname.startsWith("/admin/interview"))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/_not-found-page";
+    url.search = "";
+    return NextResponse.rewrite(url, { status: 404 });
+  }
 
   // The admin area does not exist for browsers without the signed gate cookie.
   if ((pathname === "/admin" || pathname.startsWith("/admin/")) && !(await verifyAdminGate(request.cookies.get(ADMIN_GATE_COOKIE)?.value))) {

@@ -1,16 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import type { Level } from "@/generated/prisma/client";
 import { getDomain } from "@/lib/catalog";
+import { interviewPrepEnabled } from "@/lib/flags";
 import { db } from "@/lib/db";
 import { isAdmin, requireUser } from "@/lib/session";
 import { getAccess } from "@/server/access";
 import {
   MAX_SCORE_PER_ANSWER,
   createSession,
+  resumeQuestions,
+  resumeToText,
+  reviewResume,
   getSession,
   gradeAnswer,
   gradeFollowUp,
@@ -27,6 +31,8 @@ const DAILY_INTERVIEW_LIMIT = 10;
 
 /** The simulator is part of Pro; admins always have it for testing. */
 async function requirePro() {
+  // Built, not launched yet — see lib/flags.
+  if (!interviewPrepEnabled) notFound();
   const user = await requireUser("/interview");
   if (isAdmin(user)) return user;
   const access = await getAccess(user.id);
@@ -38,13 +44,16 @@ const startSchema = z.object({
   round: z.enum(["APTITUDE", "TECHNICAL", "CODING"]),
   level: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]),
   domainTag: z.string().trim().max(40).optional(),
+  mode: z.enum(["TEXT", "VOICE"]).default("TEXT"),
+  /** Add questions drawn from the student's own resume. */
+  useResume: z.boolean().default(false),
 });
 
 export async function startInterview(input: z.input<typeof startSchema>): Promise<InterviewResult> {
   const user = await requirePro();
   const parsed = startSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Pick a round and a level to start." };
-  const { round, level, domainTag } = parsed.data;
+  const { round, level, domainTag, mode, useResume } = parsed.data;
 
   if (roundConfig[round as RoundKey].needsDomain && !domainTag) return { ok: false, error: "Choose the role you're interviewing for." };
 
@@ -59,7 +68,18 @@ export async function startInterview(input: z.input<typeof startSchema>): Promis
   // One live session at a time keeps the history clean.
   await db.interviewSession.updateMany({ where: { userId: user.id, status: "IN_PROGRESS" }, data: { status: "ABANDONED", completedAt: new Date() } });
 
-  const session = await createSession(user.id, round as RoundKey, level as Level, domainTag ?? null);
+  // Questions about what the student actually claims on their resume, asked
+  // first — generated before the session so the numbering is right from the start.
+  let extra: Awaited<ReturnType<typeof resumeQuestions>> = [];
+  if (useResume && round === "TECHNICAL") {
+    const resume = await db.resume.findUnique({ where: { userId: user.id }, select: { data: true } });
+    const label = domainTag ? (getDomain(domainTag)?.name ?? domainTag) : "general";
+    extra = await resumeQuestions(resume ? resumeToText(resume.data) : "", label, 2);
+  }
+
+  // Only spoken rounds make sense out loud: multiple choice and code do not.
+  const spoken = mode === "VOICE" && round === "TECHNICAL";
+  const session = await createSession(user.id, round as RoundKey, level as Level, domainTag ?? null, spoken, extra);
   if (!session) return { ok: false, error: "Not enough questions in this round yet. Try another role or level." };
 
   revalidatePath("/interview");
@@ -202,4 +222,17 @@ export async function abandonInterview(sessionId: string): Promise<void> {
   });
   revalidatePath("/interview");
   redirect("/interview");
+}
+
+/** ATS-style review of the student's own resume for a role. */
+export async function reviewMyResume(domainTag: string): Promise<InterviewResult & { review?: Awaited<ReturnType<typeof reviewResume>> }> {
+  const user = await requirePro();
+  const resume = await db.resume.findUnique({ where: { userId: user.id }, select: { data: true } });
+  const text = resume ? resumeToText(resume.data) : "";
+  if (!text.trim()) return { ok: false, error: "Build your resume first — the resume builder is in the sidebar." };
+
+  const label = getDomain(domainTag)?.name ?? "the role";
+  const review = await reviewResume(text, label);
+  if (!review) return { ok: false, error: "The AI reviewer is busy or switched off right now. Try again in a minute." };
+  return { ok: true, review };
 }

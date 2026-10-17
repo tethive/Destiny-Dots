@@ -323,3 +323,13 @@ Students with Pro can take mock interviews — aptitude, technical and coding �
 **Questions** live in Admin → Interview bank: 87 ship with the app (30 aptitude, 45 technical across all domains, 12 coding). Edit or retire them there, or add your own. Retiring keeps a question out of new interviews without deleting past answers.
 
 **Access**: mock interviews need Pro (admins always have access, so you can test before payments are live — or grant Pro to a tester from Admin → Users). The question bank at `/interview/prep` is free for every signed-in student.
+
+### Interview prep: study material, voice and resume
+
+- **Study material** (Admin → Interview bank → Add material): links shown above the practice questions for each round. YouTube plays inside the app; everything else opens at the source. **Link, don't re-host** — putting someone else's PDF on your storage and charging for access is copyright infringement. Eight starter links ship with the app (CareerRide, IndiaBix, GeeksforGeeks, Striver, LeetCode, NeetCode).
+- **Voice interview**: on the technical round, students can turn on "Speak your answers". The interviewer reads each question aloud, the student answers out loud and the words appear as editable text. Needs Chrome, Edge or Safari — Firefox falls back to typing. Nothing is recorded or uploaded, and the camera self-view is preview-only.
+  - This needs `camera=(self), microphone=(self)` in the Permissions-Policy header (already set in `next.config.ts`).
+  - Chrome sends the audio to Google to transcribe. Say so in your privacy policy before launch.
+- **Resume stage**: "Screen my resume" gives an ATS-style review of the student's saved resume for a chosen role — score, strengths, gaps, keywords and stronger wording. Turning on "Ask about my resume" opens the interview with two questions drawn from their own projects.
+
+**Interview prep is hidden by default.** It is fully built but not part of the first launch: the sidebar entries are gone, and `/interview`, `/interview/*` and `/admin/interview` return "page not found" for everyone. To switch it on later, add `NEXT_PUBLIC_INTERVIEW_PREP` = `1` in Vercel and redeploy. Its tables and seeded questions stay in the database either way, so nothing is lost while it is hidden.

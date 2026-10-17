@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Brain, Code2, LoaderCircle, Play, Sigma } from "lucide-react";
+import { Brain, Code2, FileUser, LoaderCircle, Mic, Play, Sigma } from "lucide-react";
 import { toast } from "sonner";
 import { DomainIcon } from "@/components/domain";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { domains } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 import { startInterview } from "@/server/actions/interview";
@@ -27,15 +28,23 @@ const levels = [
   { value: "ADVANCED", label: "Senior — deep dives and trade-offs" },
 ];
 
-export function StartInterviewForm({ rounds, defaultDomain }: { rounds: RoundOption[]; defaultDomain?: string }) {
+export function StartInterviewForm({ rounds, defaultDomain, hasResume = false }: { rounds: RoundOption[]; defaultDomain?: string; hasResume?: boolean }) {
   const [round, setRound] = useState<RoundOption>(rounds[0]);
   const [level, setLevel] = useState("BEGINNER");
   const [domain, setDomain] = useState(defaultDomain ?? domains[0].tag);
+  const [voice, setVoice] = useState(false);
+  const [useResume, setUseResume] = useState(false);
   const [pending, start] = useTransition();
 
   const go = () =>
     start(async () => {
-      const res = await startInterview({ round: round.key, level: level as "BEGINNER", domainTag: round.needsDomain ? domain : undefined });
+      const res = await startInterview({
+        round: round.key,
+        level: level as "BEGINNER",
+        domainTag: round.needsDomain ? domain : undefined,
+        mode: voice && round.key === "TECHNICAL" ? "VOICE" : "TEXT",
+        useResume: useResume && round.key === "TECHNICAL",
+      });
       // A successful start redirects, so anything returned here is a problem.
       if (res && !res.ok) toast.error(res.error);
     });
@@ -110,9 +119,38 @@ export function StartInterviewForm({ rounds, defaultDomain }: { rounds: RoundOpt
         )}
       </div>
 
+      {round.key === "TECHNICAL" && (
+        <label className="mt-4 flex items-start justify-between gap-4 rounded-xl border p-4">
+          <span>
+            <span className="flex items-center gap-2 font-medium">
+              <Mic className="size-4 text-primary" /> Speak your answers
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              The interviewer reads each question aloud and you answer out loud, with your camera on if you want to practise eye contact. Needs Chrome,
+              Edge or Safari; nothing is recorded.
+            </span>
+          </span>
+          <Switch checked={voice} onCheckedChange={setVoice} aria-label="Speak your answers" />
+        </label>
+      )}
+
+      {round.key === "TECHNICAL" && hasResume && (
+        <label className="mt-3 flex items-start justify-between gap-4 rounded-xl border p-4">
+          <span>
+            <span className="flex items-center gap-2 font-medium">
+              <FileUser className="size-4 text-primary" /> Ask about my resume
+            </span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              Starts with two questions about your own projects and claims, then moves to the standard role questions.
+            </span>
+          </span>
+          <Switch checked={useResume} onCheckedChange={setUseResume} aria-label="Ask about my resume" />
+        </label>
+      )}
+
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <Button size="lg" className="rounded-full" disabled={pending || round.available < 2} onClick={go}>
-          {pending ? <LoaderCircle className="animate-spin" /> : <Play />} Start {round.label.toLowerCase()} round
+          {pending ? <LoaderCircle className="animate-spin" /> : <Play />} Start {voice && round.key === "TECHNICAL" ? "voice" : round.label.toLowerCase()} round
         </Button>
         {round.available < 2 && <p className="text-sm text-muted-foreground">No questions in this round yet — try another one.</p>}
       </div>

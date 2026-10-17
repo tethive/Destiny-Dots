@@ -15,7 +15,12 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: 'camera=(), microphone=(), geolocation=(), browsing-topics=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com")' },
+  // Camera and microphone are allowed only for our own pages (the voice
+  // interview); third-party frames still can't reach them.
+  {
+    key: "Permissions-Policy",
+    value: 'camera=(self), microphone=(self), geolocation=(), browsing-topics=(), payment=(self "https://checkout.razorpay.com" "https://api.razorpay.com")',
+  },
   // Allows the Razorpay and Google sign-in popups to talk back to this page.
   { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
   { key: "X-DNS-Prefetch-Control", value: "on" },

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, BookOpenCheck, MessageSquareText, Sparkles, Target, Trophy } from "lucide-react";
 import { PageHeader, StatCard } from "@/components/app/page-header";
+import { ResumeReviewCard } from "@/components/interview/resume-review";
 import { StartInterviewForm, type RoundOption } from "@/components/interview/start-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,18 +13,22 @@ import { skillLevelLabels } from "@/lib/labels";
 import { isAdmin, requireUser } from "@/lib/session";
 import { getAccess } from "@/server/access";
 import { interviewStats, roundConfig, type RoundKey } from "@/server/interviews";
+import { interviewPrepEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Interview prep" };
 
 const day = (d: Date) => d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 
 export default async function InterviewHomePage() {
+  // Built, not launched yet — see lib/flags.
+  if (!interviewPrepEnabled) notFound();
   const user = await requireUser("/interview");
-  const [access, counts, stats, live] = await Promise.all([
+  const [access, counts, stats, live, resume] = await Promise.all([
     getAccess(user.id),
     db.interviewQuestion.groupBy({ by: ["round"], where: { isActive: true }, _count: true }),
     interviewStats(user.id),
     db.interviewSession.findFirst({ where: { userId: user.id, status: "IN_PROGRESS" }, select: { id: true, round: true, startedAt: true } }),
+    db.resume.findUnique({ where: { userId: user.id }, select: { userId: true } }),
   ]);
   const pro = access.plan || isAdmin(user);
 
@@ -67,7 +73,10 @@ export default async function InterviewHomePage() {
       </div>
 
       {pro ? (
-        <StartInterviewForm rounds={rounds} />
+        <>
+          <ResumeReviewCard hasResume={Boolean(resume)} />
+          <StartInterviewForm rounds={rounds} hasResume={Boolean(resume)} />
+        </>
       ) : (
         <section className="rounded-2xl border border-primary/30 bg-card p-5 shadow-xs">
           <span className="flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary">

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { MessageSquareText, Search, Sparkles } from "lucide-react";
 import { InterviewQuestionEditor, QuestionRowActions, type QuestionValues } from "@/components/admin/interview-editor";
+import { DeleteMaterialButton, InterviewMaterialEditor, type MaterialValues } from "@/components/admin/interview-material-editor";
 import { FilterSelect } from "@/components/app/filter-select";
 import { EmptyState, PageHeader, StatCard } from "@/components/app/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +15,8 @@ import { features } from "@/lib/env";
 import { skillLevelLabels } from "@/lib/labels";
 import { requireAdmin } from "@/lib/session";
 import { roundConfig, type RoundKey } from "@/server/interviews";
+import { cn } from "@/lib/utils";
+import { interviewPrepEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Interview bank" };
 
@@ -20,6 +24,8 @@ const rounds = { APTITUDE: "Aptitude", TECHNICAL: "Technical", CODING: "Coding" 
 const when = (d: Date) => d.toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
 
 export default async function AdminInterviewPage(props: PageProps<"/admin/interview">) {
+  // Built, not launched yet — see lib/flags.
+  if (!interviewPrepEnabled) notFound();
   await requireAdmin();
   const sp = await props.searchParams;
   const q = typeof sp.q === "string" ? sp.q : "";
@@ -32,7 +38,7 @@ export default async function AdminInterviewPage(props: PageProps<"/admin/interv
     ...(domain ? { domainTags: { has: domain } } : {}),
   };
 
-  const [questions, counts, sessions, sessionCount] = await Promise.all([
+  const [questions, counts, sessions, sessionCount, materials] = await Promise.all([
     db.interviewQuestion.findMany({ where, orderBy: [{ round: "asc" }, { topic: "asc" }], take: 200 }),
     db.interviewQuestion.groupBy({ by: ["round"], where: { isActive: true }, _count: true }),
     db.interviewSession.findMany({
@@ -42,6 +48,7 @@ export default async function AdminInterviewPage(props: PageProps<"/admin/interv
       include: { user: { select: { name: true } } },
     }),
     db.interviewSession.count({ where: { status: "COMPLETED" } }),
+    db.interviewMaterial.findMany({ orderBy: [{ round: "asc" }, { order: "asc" }] }),
   ]);
 
   return (
@@ -49,7 +56,12 @@ export default async function AdminInterviewPage(props: PageProps<"/admin/interv
       <PageHeader
         title="Interview bank"
         description="Questions for the practice bank and the AI mock interviews. Retire a question to keep it out of new interviews without deleting it."
-        actions={<InterviewQuestionEditor />}
+        actions={
+          <>
+            <InterviewMaterialEditor />
+            <InterviewQuestionEditor />
+          </>
+        }
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -137,6 +149,53 @@ export default async function AdminInterviewPage(props: PageProps<"/admin/interv
           </Table>
         </div>
       )}
+
+      <section className="rounded-2xl border bg-card p-5 shadow-xs">
+        <h2 className="font-semibold">Study material</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Shown above the practice questions. Link to the source — re-hosting someone else&apos;s PDF without permission is copyright infringement, and
+          charging for access makes it worse.
+        </p>
+        {materials.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">Nothing added yet.</p>
+        ) : (
+          <ul className="mt-3 divide-y text-sm">
+            {materials.map((m) => {
+              const values: MaterialValues = {
+                id: m.id,
+                round: m.round,
+                kind: m.kind,
+                title: m.title,
+                description: m.description ?? "",
+                source: m.source ?? "",
+                url: m.url,
+                domainTags: m.domainTags,
+                order: m.order,
+                isActive: m.isActive,
+              };
+              return (
+                <li key={m.id} className={cn("flex flex-wrap items-center justify-between gap-2 py-2.5", !m.isActive && "opacity-60")}>
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary">{rounds[m.round]}</Badge>
+                      <span className="truncate font-medium">{m.title}</span>
+                      {!m.isActive && <span className="text-xs text-muted-foreground">hidden</span>}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {m.source ? `${m.source} · ` : ""}
+                      {m.url}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center">
+                    <InterviewMaterialEditor value={values} />
+                    <DeleteMaterialButton id={m.id} title={m.title} />
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-2xl border bg-card p-5 shadow-xs">
         <h2 className="font-semibold">Recent interviews</h2>

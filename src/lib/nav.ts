@@ -26,6 +26,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { interviewPrepEnabled } from "@/lib/flags";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon; badge?: string };
 export type NavGroup = { label: string; items: NavItem[] };
@@ -47,7 +48,7 @@ export const studentNav: NavGroup[] = [
       { href: "/certifications", label: "Certifications", icon: Award },
       { href: "/jobs", label: "Job listings", icon: Briefcase },
       { href: "/updates", label: "Tech updates", icon: Newspaper },
-      { href: "/interview", label: "Interview prep", icon: MessageSquareText },
+      ...(interviewPrepEnabled ? [{ href: "/interview", label: "Interview prep", icon: MessageSquareText }] : []),
       { href: "/resume", label: "Resume builder", icon: FileUser },
       { href: "/marketplace", label: "Project marketplace", icon: Store },
     ],
@@ -97,7 +98,7 @@ export const adminNav: NavGroup[] = [
       { href: "/admin/content/updates", label: "Tech updates", icon: Newspaper },
       { href: "/admin/content/jobs", label: "Job listings", icon: Briefcase },
       { href: "/admin/content/certifications", label: "Certifications", icon: BookOpenCheck },
-      { href: "/admin/interview", label: "Interview bank", icon: MessageSquareText },
+      ...(interviewPrepEnabled ? [{ href: "/admin/interview", label: "Interview bank", icon: MessageSquareText }] : []),
       { href: "/admin/content/imports", label: "Auto-imports", icon: RefreshCw },
     ],
   },

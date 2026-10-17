@@ -8,10 +8,13 @@ import { getDomain } from "@/lib/catalog";
 import { isAdmin, requireUser } from "@/lib/session";
 import { getAccess } from "@/server/access";
 import { getSession, roundConfig, type RoundKey } from "@/server/interviews";
+import { interviewPrepEnabled } from "@/lib/flags";
 
 export const metadata: Metadata = { title: "Mock interview", robots: { index: false } };
 
 export default async function InterviewSessionPage(props: PageProps<"/interview/session/[id]">) {
+  // Built, not launched yet — see lib/flags.
+  if (!interviewPrepEnabled) notFound();
   const { id } = await props.params;
   const user = await requireUser(`/interview/session/${id}`);
   const access = await getAccess(user.id);
@@ -61,6 +64,7 @@ export default async function InterviewSessionPage(props: PageProps<"/interview/
         totalMinutes={config.minutes}
         startedAt={session.startedAt.toISOString()}
         questions={questions}
+        voice={session.mode === "VOICE"}
       />
     </div>
   );
