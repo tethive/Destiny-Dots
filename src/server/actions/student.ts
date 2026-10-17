@@ -100,15 +100,26 @@ async function loadDotForUser(userId: string, dotId: string) {
   return canOpenDot(access, dot) ? dot : null;
 }
 
+/**
+ * Every dot that teaches the same topic — the shared modules appear in many
+ * paths — so ticking one ticks all of them.
+ */
+async function sameTopicDotIds(dot: { id: string; topicKey: string | null; moduleCode: string | null }) {
+  if (!dot.moduleCode || !dot.topicKey) return [dot.id];
+  const twins = await db.dot.findMany({ where: { topicKey: dot.topicKey }, select: { id: true } });
+  return twins.length ? twins.map((t) => t.id) : [dot.id];
+}
+
 export async function setDotComplete(dotId: string, complete: boolean): Promise<ActionResult> {
   const user = await requireUser();
   const dot = await loadDotForUser(user.id, dotId);
   if (!dot) return { ok: false, error: "Unlock this dot to track progress." };
 
+  const dotIds = await sameTopicDotIds(dot);
   if (complete) {
-    await db.progress.upsert({ where: { userId_dotId: { userId: user.id, dotId } }, update: {}, create: { userId: user.id, dotId } });
+    await db.progress.createMany({ data: dotIds.map((id) => ({ userId: user.id, dotId: id })), skipDuplicates: true });
   } else {
-    await db.progress.deleteMany({ where: { userId: user.id, dotId } });
+    await db.progress.deleteMany({ where: { userId: user.id, dotId: { in: dotIds } } });
   }
 
   // Auto-enrol and keep path completion in sync.
@@ -153,7 +164,8 @@ export async function submitQuiz(
   const passed = score / questions.length >= 0.7;
   await db.quizAttempt.create({ data: { userId: user.id, dotId, score, total: questions.length, passed } });
   if (passed) {
-    await db.progress.upsert({ where: { userId_dotId: { userId: user.id, dotId } }, update: {}, create: { userId: user.id, dotId } });
+    const dotIds = await sameTopicDotIds(dot);
+    await db.progress.createMany({ data: dotIds.map((id) => ({ userId: user.id, dotId: id })), skipDuplicates: true });
     await db.enrollment.upsert({
       where: { userId_pathId: { userId: user.id, pathId: dot.pathId } },
       update: { lastActivityAt: new Date() },

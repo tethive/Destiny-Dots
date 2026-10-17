@@ -10,6 +10,9 @@ export const SEARCH_CACHE_TAG = "catalogue-search";
  * result is cached across requests instead of reloading the whole catalogue on
  * each navigation. Publishing changes clear it; other edits show within 5 minutes.
  */
+/** Dot titles folded into a path's search keywords. */
+const KEYWORD_DOTS = 25;
+
 export const searchPaths = unstable_cache(
   async (): Promise<SearchPath[]> => {
     const paths = await getPublishedPaths();
@@ -18,7 +21,8 @@ export const searchPaths = unstable_cache(
       domainTag: p.domainTag as SearchPath["domainTag"],
       title: p.title,
       dotCount: p.dots.length,
-      keywords: `${p.roles.join(" ")} ${p.dots.map((d) => d.title).join(" ")}`,
+      // Enough to match on, without shipping thousands of dot titles to every page.
+      keywords: `${p.roles.join(" ")} ${p.dots.slice(0, KEYWORD_DOTS).map((d) => d.title).join(" ")}`,
     }));
   },
   ["search-paths"],

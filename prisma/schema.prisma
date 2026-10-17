@@ -210,6 +210,11 @@ model Dot {
   hours         Int            @default(8)
   isFree        Boolean        @default(false)
   certification String?
+  /// Stable topic id. Shared-module topics carry the same key in every path, so
+  /// completing one ticks it everywhere.
+  topicKey      String?
+  /// Shared module this dot came from (e.g. "S4"), null for path-only topics.
+  moduleCode    String?
   resources     DotResource[]
   questions     QuizQuestion[]
   progress      Progress[]
@@ -218,6 +223,9 @@ model Dot {
   updatedAt     DateTime       @updatedAt
 
   @@unique([pathId, order])
+  @@unique([pathId, topicKey])
+  @@index([topicKey])
+  @@index([moduleCode])
 }
 
 enum ResourceType {

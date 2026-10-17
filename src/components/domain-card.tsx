@@ -2,12 +2,19 @@ import Link from "next/link";
 import { ArrowUpRight, Clock } from "lucide-react";
 import { DomainIcon, domainVars } from "@/components/domain";
 import { TiltCard } from "@/components/motion/tilt-card";
-import { getPathsByDomain, type Domain } from "@/lib/catalog";
+import type { Domain } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
-export function DomainCard({ domain, className }: { domain: Domain; className?: string }) {
-  const paths = getPathsByDomain(domain.tag).filter((p) => p.isPublished);
-  const dots = paths.reduce((n, p) => n + p.dots.length, 0);
+export function DomainCard({
+  domain,
+  count,
+  className,
+}: {
+  domain: Domain;
+  /** Live counts for this domain; omitted while the roadmaps are still being written. */
+  count?: { paths: number; dots: number };
+  className?: string;
+}) {
   const comingSoon = domain.status !== "live";
 
   const body = (
@@ -28,7 +35,9 @@ export function DomainCard({ domain, className }: { domain: Domain; className?: 
       <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{domain.tagline}</p>
       <div className="mt-auto flex items-center gap-2 pt-5 font-mono text-[11px] text-muted-foreground">
         <span className="d-solid size-1.5 rounded-full" />
-        {comingSoon ? "Roadmaps in the works" : `${paths.length} ${paths.length === 1 ? "path" : "paths"} · ${dots} dots`}
+        {comingSoon
+          ? "Roadmaps in the works"
+          : `${count?.paths ?? 0} ${count?.paths === 1 ? "path" : "paths"} · ${count?.dots ?? 0} dots`}
       </div>
       {/* 3D depth: faint domain glow sitting behind the content */}
       <span

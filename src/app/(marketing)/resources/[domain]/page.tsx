@@ -11,7 +11,7 @@ import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import { PathCard } from "@/components/path-card";
 import { Button } from "@/components/ui/button";
 import { getDomain, liveDomains, type Domain } from "@/lib/catalog";
-import { publicPaths } from "@/server/catalog";
+import { publicDomainCounts, publicPaths } from "@/server/catalog";
 
 export async function generateMetadata(props: PageProps<"/resources/[domain]">): Promise<Metadata> {
   const { domain: tag } = await props.params;
@@ -27,6 +27,8 @@ export default async function DomainPage(props: PageProps<"/resources/[domain]">
   if (!domain) notFound();
 
   if (domain.status !== "live") return <ComingSoonDomain domain={domain} />;
+
+  const domainCounts = await publicDomainCounts();
 
   const domainPaths = (await publicPaths()).filter((p) => p.domainTag === domain.tag);
   const published = domainPaths.filter((p) => p.isPublished);
@@ -109,7 +111,7 @@ export default async function DomainPage(props: PageProps<"/resources/[domain]">
           <Stagger className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {others.map((d) => (
               <StaggerItem key={d.tag}>
-                <DomainCard domain={d} />
+                <DomainCard domain={d} count={domainCounts[d.tag]} />
               </StaggerItem>
             ))}
           </Stagger>
@@ -122,7 +124,8 @@ export default async function DomainPage(props: PageProps<"/resources/[domain]">
 }
 
 /** Shown for domains whose roadmaps are still being written. */
-function ComingSoonDomain({ domain }: { domain: Domain }) {
+async function ComingSoonDomain({ domain }: { domain: Domain }) {
+  const domainCounts = await publicDomainCounts();
   return (
     <>
       <PageHero
@@ -145,7 +148,7 @@ function ComingSoonDomain({ domain }: { domain: Domain }) {
         <Stagger className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {liveDomains().map((d) => (
             <StaggerItem key={d.tag}>
-              <DomainCard domain={d} />
+              <DomainCard domain={d} count={domainCounts[d.tag]} />
             </StaggerItem>
           ))}
         </Stagger>

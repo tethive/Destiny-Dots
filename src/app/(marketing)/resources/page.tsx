@@ -9,7 +9,7 @@ import { SearchLauncher } from "@/components/marketing/search-launcher";
 import { PageHero, SectionHeading } from "@/components/marketing/section";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { domains, liveDomains } from "@/lib/catalog";
-import { publicPaths, publicStats } from "@/server/catalog";
+import { publicDomainCounts, publicPaths, publicStats } from "@/server/catalog";
 
 export const metadata: Metadata = {
   title: `Resources — career paths for ${liveDomains().length} tech domains`,
@@ -25,7 +25,7 @@ const memberTools = [
 ];
 
 export default async function ResourcesPage() {
-  const [stats, paths] = await Promise.all([publicStats(), publicPaths()]);
+  const [stats, paths, domainCounts] = await Promise.all([publicStats(), publicPaths(), publicDomainCounts()]);
 
   return (
     <>
@@ -48,7 +48,7 @@ export default async function ResourcesPage() {
         <Stagger className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {domains.map((d) => (
             <StaggerItem key={d.tag}>
-              <DomainCard domain={d} />
+              <DomainCard domain={d} count={domainCounts[d.tag]} />
             </StaggerItem>
           ))}
           <StaggerItem>

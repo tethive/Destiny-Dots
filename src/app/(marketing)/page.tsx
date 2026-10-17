@@ -101,7 +101,7 @@ export default async function HomePage() {
           <Stagger className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {domains.map((d) => (
               <StaggerItem key={d.tag}>
-                <DomainCard domain={d} />
+                <DomainCard domain={d} count={domainCounts[d.tag]} />
               </StaggerItem>
             ))}
             <StaggerItem>
