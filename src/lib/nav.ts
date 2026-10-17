@@ -1,31 +1,4 @@
-import {
-  Award,
-  BadgeIndianRupee,
-  Bookmark,
-  BookOpenCheck,
-  Briefcase,
-  ChartNoAxesCombined,
-  Compass,
-  CreditCard,
-  FileText,
-  FileUser,
-  FolderKanban,
-  Gauge,
-  Inbox,
-  Receipt,
-  RefreshCw,
-  ShieldAlert,
-  LayoutDashboard,
-  Library,
-  MessageSquareText,
-  Newspaper,
-  Route,
-  Settings,
-  Store,
-  Trophy,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { Award, BadgeIndianRupee, Bookmark, BookOpenCheck, Briefcase, ChartNoAxesCombined, Compass, CreditCard, FileText, FileUser, FolderKanban, Gauge, Inbox, Layers, LayoutDashboard, Library, MessageSquareText, Newspaper, Receipt, RefreshCw, Route, Settings, ShieldAlert, Store, Trophy, type LucideIcon, Users } from "lucide-react";
 import { interviewPrepEnabled } from "@/lib/flags";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon; badge?: string };
@@ -80,6 +53,7 @@ export const adminNav: NavGroup[] = [
     label: "Catalogue",
     items: [
       { href: "/admin/paths", label: "Paths & dots", icon: FolderKanban },
+      { href: "/admin/curriculum", label: "Curriculum curation", icon: Layers },
       { href: "/admin/resources", label: "Resource library", icon: Library },
     ],
   },
