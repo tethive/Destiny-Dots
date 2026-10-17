@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, LoaderCircle, Plus, Search, Upload, X } from "lucide-react";
+import { Check, FileText, LoaderCircle, Plus, Search, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useUpload } from "@/components/uploads/use-upload";
 import { cn } from "@/lib/utils";
 import { saveResource } from "@/server/actions/admin";
 import { importResourceCsv, previewResourceCsv, setTopicResources, type CsvPreview } from "@/server/actions/curriculum";
@@ -104,7 +105,7 @@ function TopicDialog({ topic, library, onClose }: { topic: CuratorTopic; library
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search the resource library" className="pl-9" />
           </div>
           <Button variant="outline" className="rounded-full" onClick={() => setAdding(true)}>
-            <Plus /> New link
+            <Plus /> New resource
           </Button>
         </div>
 
@@ -167,21 +168,36 @@ function TopicDialog({ topic, library, onClose }: { topic: CuratorTopic; library
   );
 }
 
-/** Add a single link without leaving the topic. */
+/** Add a link or upload a document without leaving the topic. */
 function QuickLink({ onClose, onCreated }: { onClose: () => void; onCreated: (id: string) => void }) {
   const [pending, start] = useTransition();
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [type, setType] = useState<ResourceKind>("VIDEO");
   const [duration, setDuration] = useState("");
+  const [file, setFile] = useState<{ key: string; name: string; mime: string } | null>(null);
+  const { upload, progress } = useUpload();
+
+  const pick = async (chosen: File) => {
+    try {
+      const up = await upload(chosen, "resource");
+      setFile({ key: up.key, name: up.name, mime: up.mime });
+      setUrl("");
+      // A document is the common case for an upload, and the title is usually the filename.
+      setType((cur) => (cur === "VIDEO" && !chosen.type.startsWith("video/") ? "DOC" : cur));
+      setTitle((cur) => cur || chosen.name.replace(/\.[^.]+$/, ""));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    }
+  };
 
   const submit = () =>
     start(async () => {
-      const res = await saveResource(null, { title, url, type, duration, isPremium: false, domainTags: [], topics: "", level: "BEGINNER" });
+      const res = await saveResource(null, { title, url, type, duration, isPremium: false, domainTags: [], topics: "", level: "BEGINNER", file });
       if (res.ok && res.id) {
         toast.success("Resource added");
         onCreated(res.id);
-      } else toast.error("error" in res ? res.error : "Could not add that link");
+      } else toast.error("error" in res ? res.error : "Could not add that resource");
     });
 
   return (
@@ -198,7 +214,35 @@ function QuickLink({ onClose, onCreated }: { onClose: () => void; onCreated: (id
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ql-url">Link</Label>
-            <Input id="ql-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
+            <Input id="ql-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" disabled={Boolean(file)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>…or upload a document</Label>
+            {file ? (
+              <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
+                <FileText className="size-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                <Button type="button" variant="ghost" size="icon" aria-label="Remove file" onClick={() => setFile(null)}>
+                  <X className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button type="button" variant="outline" className="w-full rounded-lg" asChild>
+                <label>
+                  <Upload /> {progress !== null ? `Uploading… ${progress}%` : "Choose a PDF, image or MP4"}
+                  <input
+                    type="file"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const chosen = e.target.files?.[0];
+                      e.target.value = "";
+                      if (chosen) void pick(chosen);
+                    }}
+                  />
+                </label>
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground">Up to 50 MB. Students read it inside the app; there is no download button.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -226,7 +270,7 @@ function QuickLink({ onClose, onCreated }: { onClose: () => void; onCreated: (id
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={pending || !title.trim() || !url.trim()} className="rounded-full">
+          <Button onClick={submit} disabled={pending || !title.trim() || (!url.trim() && !file)} className="rounded-full">
             {pending && <LoaderCircle className="animate-spin" />} Add
           </Button>
         </DialogFooter>
