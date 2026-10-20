@@ -9,7 +9,7 @@ import { SearchLauncher } from "@/components/marketing/search-launcher";
 import { PageHero, SectionHeading } from "@/components/marketing/section";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { domains, liveDomains } from "@/lib/catalog";
-import { publicDomainCounts, publicPaths, publicStats } from "@/server/catalog";
+import { publicDomainCounts, publicPathSummaries, publicStats } from "@/server/catalog";
 
 export const metadata: Metadata = {
   title: `Resources — career paths for ${liveDomains().length} tech domains`,
@@ -25,7 +25,7 @@ const memberTools = [
 ];
 
 export default async function ResourcesPage() {
-  const [stats, paths, domainCounts] = await Promise.all([publicStats(), publicPaths(), publicDomainCounts()]);
+  const [stats, paths, domainCounts] = await Promise.all([publicStats(), publicPathSummaries(), publicDomainCounts()]);
 
   return (
     <>

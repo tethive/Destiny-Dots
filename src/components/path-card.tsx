@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ArrowRight, Clock, Hourglass } from "lucide-react";
-import { type CareerPath, getDomain, pathHref } from "@/lib/catalog";
+import { getDomain, pathHref, STRIP_DOTS, type PathSummary } from "@/lib/catalog";
+
 import { DomainIcon, domainVars } from "@/components/domain";
 import { TiltCard } from "@/components/motion/tilt-card";
 import { cn } from "@/lib/utils";
 
-export function PathCard({ path, showDomain = false }: { path: CareerPath; showDomain?: boolean }) {
+export function PathCard({ path, showDomain = false }: { path: PathSummary; showDomain?: boolean }) {
   const domain = getDomain(path.domainTag)!;
 
   if (!path.isPublished) {
@@ -23,7 +24,9 @@ export function PathCard({ path, showDomain = false }: { path: CareerPath; showD
     );
   }
 
-  const free = path.dots.filter((d) => d.isFree).length;
+  const free = path.freeCount;
+  // A 150-dot path would render 150 spans per card, so the strip is capped.
+  const strip = Array.from({ length: Math.min(path.dotCount, STRIP_DOTS) }, (_, i) => i < free);
 
   return (
     <TiltCard max={4} style={domainVars(path.domainTag)} className="rounded-2xl">
@@ -47,11 +50,11 @@ export function PathCard({ path, showDomain = false }: { path: CareerPath; showD
         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{path.summary}</p>
 
         <div className="mt-5 flex items-center" aria-hidden>
-          {path.dots.map((d, i) => (
-            <div key={d.order} className="flex flex-1 items-center last:flex-none">
-              <span className={cn("size-2 shrink-0 rounded-full", d.isFree ? "d-solid" : "border-[1.5px] border-locked bg-card")} />
-              {i < path.dots.length - 1 && (
-                <span className={cn("h-px flex-1", d.isFree && path.dots[i + 1].isFree ? "d-solid" : "bg-border")} />
+          {strip.map((isFree, i) => (
+            <div key={i} className="flex flex-1 items-center last:flex-none">
+              <span className={cn("size-2 shrink-0 rounded-full", isFree ? "d-solid" : "border-[1.5px] border-locked bg-card")} />
+              {i < strip.length - 1 && (
+                <span className={cn("h-px flex-1", isFree && strip[i + 1] ? "d-solid" : "bg-border")} />
               )}
             </div>
           ))}
@@ -59,7 +62,7 @@ export function PathCard({ path, showDomain = false }: { path: CareerPath; showD
 
         <div className="mt-4 flex items-center justify-between border-t pt-4 text-sm">
           <span className="text-muted-foreground">
-            <span className="font-medium text-foreground">{path.dots.length} dots</span> · {free} free
+            <span className="font-medium text-foreground">{path.dotCount} dots</span> · {free} free
           </span>
           <span className="inline-flex items-center gap-1 font-medium text-foreground">
             View path <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />

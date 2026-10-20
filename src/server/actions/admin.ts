@@ -12,6 +12,7 @@ import { decrypt } from "@/lib/security";
 import { cleanupImports, importJobs, importUpdates } from "@/server/importers";
 import { checkLinks, inspectLink } from "@/server/link-check";
 import { sellerEarnings } from "@/server/marketplace";
+import { CATALOGUE_TAG } from "@/server/catalog";
 import { SEARCH_CACHE_TAG } from "@/server/search";
 import { saveSetting } from "@/server/settings";
 import { deleteObject } from "@/lib/storage";
@@ -45,6 +46,8 @@ const csv = (s: string) =>
 
 function revalidateCatalogue(slug?: string, domainTag?: string) {
   revalidateTag(SEARCH_CACHE_TAG, "max");
+  // Cached counts and card data are hourly, so publishing has to clear them.
+  revalidateTag(CATALOGUE_TAG, "max");
   revalidatePath("/", "layout");
   if (slug) revalidatePath(`/learn/${slug}`, "layout");
   if (domainTag) revalidatePath(`/resources/${domainTag}`);

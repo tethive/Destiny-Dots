@@ -15,12 +15,15 @@ import { Marquee } from "@/components/motion/marquee";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { domains, getDomain, liveDomains } from "@/lib/catalog";
-import { publicDomainCounts, publicPaths, publicStats } from "@/server/catalog";
+import { getPathBySlug, publicDomainCounts, publicPathSummaries, publicStats, toPublicPath } from "@/server/catalog";
 import { displayPrices } from "@/server/payments";
 
 export default async function HomePage() {
-  const [stats, domainCounts, paths, prices] = await Promise.all([publicStats(), publicDomainCounts(), publicPaths(), displayPrices()]);
-  const samplePath = paths.find((p) => p.slug === "data-analyst") ?? paths[0];
+  const [stats, domainCounts, paths, prices] = await Promise.all([publicStats(), publicDomainCounts(), publicPathSummaries(), displayPrices()]);
+  // The preview renders a real dot map, so it needs one full path - not all of them.
+  const previewSlug = paths.find((p) => p.slug === "data-analyst")?.slug ?? paths[0]?.slug;
+  const previewRow = previewSlug ? await getPathBySlug(previewSlug) : null;
+  const samplePath = previewRow ? toPublicPath(previewRow) : null;
 
   return (
     <>

@@ -49,6 +49,22 @@ export interface Dot {
 
 export type Level = "Beginner" | "Intermediate" | "Advanced";
 
+/** Card-sized view of a path: what listing pages render, without the dots. */
+export interface PathSummary {
+  slug: string;
+  domainTag: DomainTag;
+  title: string;
+  summary: string;
+  level: Level;
+  duration: string;
+  isPublished: boolean;
+  dotCount: number;
+  freeCount: number;
+}
+
+/** Dots drawn in a card's progress strip, however long the path really is. */
+export const STRIP_DOTS = 12;
+
 export interface CareerPath {
   slug: string;
   domainTag: DomainTag;

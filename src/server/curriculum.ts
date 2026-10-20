@@ -32,9 +32,9 @@ export interface ModuleRow {
 }
 
 /** Dots grouped by topic, with the resources attached to them. */
-const topicIndex = cache(async () => {
+const topicIndex = cache(async (prefix?: string) => {
   const dots = await db.dot.findMany({
-    where: { topicKey: { not: null } },
+    where: prefix ? { topicKey: { startsWith: `${prefix}.` } } : { topicKey: { not: null } },
     select: {
       id: true,
       topicKey: true,
@@ -60,8 +60,26 @@ const topicIndex = cache(async () => {
   return byTopic;
 });
 
+/** Per-topic counts for the overview, without loading a single dot body. */
+const topicKeyIndex = cache(async () => {
+  const [all, withResources] = await Promise.all([
+    db.dot.groupBy({ by: ["topicKey", "pathId"], where: { topicKey: { not: null } } }),
+    db.dot.groupBy({ by: ["topicKey"], where: { topicKey: { not: null }, resources: { some: {} } } }),
+  ]);
+  const covered = new Set(withResources.map((d) => d.topicKey));
+  const byTopic = new Map<string, { dotCount: number; pathIds: Set<string>; covered: boolean }>();
+  for (const d of all) {
+    const key = d.topicKey!;
+    const entry = byTopic.get(key) ?? { dotCount: 0, pathIds: new Set<string>(), covered: covered.has(key) };
+    entry.dotCount += 1;
+    entry.pathIds.add(d.pathId);
+    byTopic.set(key, entry);
+  }
+  return byTopic;
+});
+
 export async function moduleOverview(): Promise<ModuleRow[]> {
-  const index = await topicIndex();
+  const index = await topicKeyIndex();
   return sharedModules.map((m) => {
     const keys = m.topics.map((_, i) => `${m.code}.${String(i + 1).padStart(2, "0")}`);
     const rows = keys.map((k) => index.get(k));
@@ -71,7 +89,7 @@ export async function moduleOverview(): Promise<ModuleRow[]> {
       code: m.code,
       name: m.name,
       topics: m.topics.length,
-      covered: rows.filter((r) => r && r.resources.length > 0).length,
+      covered: rows.filter((r) => r?.covered).length,
       dots: rows.reduce((n, r) => n + (r?.dotCount ?? 0), 0),
       paths: paths.size,
     };
@@ -81,7 +99,7 @@ export async function moduleOverview(): Promise<ModuleRow[]> {
 export async function moduleTopics(code: string): Promise<{ name: string; rows: TopicRow[] } | null> {
   const mod = sharedModules.find((m) => m.code.toLowerCase() === code.toLowerCase());
   if (!mod) return null;
-  const index = await topicIndex();
+  const index = await topicIndex(mod.code);
   const rows = mod.topics.map((title, i) => {
     const topicKey = `${mod.code}.${String(i + 1).padStart(2, "0")}`;
     const hit = index.get(topicKey);
@@ -94,7 +112,7 @@ export async function moduleTopics(code: string): Promise<{ name: string; rows: 
 export async function pathTopics(slug: string): Promise<{ title: string; rows: TopicRow[] } | null> {
   const path = buildCurriculum().find((p) => p.slug === slug);
   if (!path) return null;
-  const index = await topicIndex();
+  const index = await topicIndex(path.code);
   const rows = path.dots
     .filter((d) => !d.moduleCode)
     .map((d) => {

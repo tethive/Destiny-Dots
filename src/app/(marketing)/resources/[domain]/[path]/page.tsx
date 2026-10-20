@@ -9,7 +9,7 @@ import { Reveal, SplitText, Stagger, StaggerItem } from "@/components/motion/rev
 import { PathCard } from "@/components/path-card";
 import { Button } from "@/components/ui/button";
 import { getDomain, pathHours, pathHref } from "@/lib/catalog";
-import { getPathBySlug, publicPaths, toPublicPath } from "@/server/catalog";
+import { getPathBySlug, publicPathSummaries, toPublicPath } from "@/server/catalog";
 import { formatINR, savingPct } from "@/lib/pricing";
 import { displayPrices } from "@/server/payments";
 
@@ -40,7 +40,7 @@ export default async function PathPage(props: PageProps<"/resources/[domain]/[pa
   const enrolHref = `/signup?next=${encodeURIComponent(`/learn/${path.slug}`)}&intent=enrol`;
   const freeDots = path.dots.filter((d) => d.isFree).length;
   const cert = path.dots.find((d) => d.certification)?.certification;
-  const related = (await publicPaths())
+  const related = (await publicPathSummaries())
     .filter((p) => p.domainTag === path.domainTag)
     .filter((p) => p.slug !== path.slug && p.isPublished)
     .slice(0, 3);

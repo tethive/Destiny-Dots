@@ -1,8 +1,12 @@
 import "server-only";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import type { Level as DbLevel, Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
-import { isDomainLive, liveDomains, type CareerPath, type Level, type ResourceType } from "@/lib/catalog";
+import { isDomainLive, liveDomains, type CareerPath, type Level, type PathSummary, type ResourceType } from "@/lib/catalog";
+
+/** Cleared whenever an admin publishes or edits catalogue content. */
+export const CATALOGUE_TAG = "catalogue";
 
 const levelLabel: Record<DbLevel, Level> = { BEGINNER: "Beginner", INTERMEDIATE: "Intermediate", ADVANCED: "Advanced" };
 
@@ -68,46 +72,78 @@ export const getAllPathsLite = cache(async () =>
   }),
 );
 
-/** Public helpers mirroring the old static catalogue API. Unlaunched domains stay out of public listings. */
-export async function publicPaths() {
-  const [publishedAll, all] = await Promise.all([getPublishedPaths(), getAllPathsLite()]);
-  const published = publishedAll.filter((p) => isDomainLive(p.domainTag));
-  const upcoming = all
-    .filter((p) => !p.isPublished && isDomainLive(p.domainTag))
-    .map<CareerPath>((p) => ({
+export type { PathSummary };
+
+const summarise = unstable_cache(
+  async (): Promise<PathSummary[]> => {
+    const [paths, dotCounts, freeCounts] = await Promise.all([
+      db.careerPath.findMany({
+        select: { id: true, slug: true, domainTag: true, title: true, summary: true, level: true, duration: true, isPublished: true },
+        orderBy: [{ domainTag: "asc" }, { title: "asc" }],
+      }),
+      db.dot.groupBy({ by: ["pathId"], _count: { _all: true } }),
+      db.dot.groupBy({ by: ["pathId"], where: { isFree: true }, _count: { _all: true } }),
+    ]);
+    const total = new Map(dotCounts.map((d) => [d.pathId, d._count._all]));
+    const free = new Map(freeCounts.map((d) => [d.pathId, d._count._all]));
+    return paths.map((p) => ({
       slug: p.slug,
       domainTag: p.domainTag as CareerPath["domainTag"],
       title: p.title,
       summary: p.summary,
       level: levelLabel[p.level],
       duration: p.duration,
-      roles: [],
-      outcomes: [],
-      isPublished: false,
-      dots: [],
+      isPublished: p.isPublished,
+      dotCount: total.get(p.id) ?? 0,
+      freeCount: free.get(p.id) ?? 0,
     }));
-  return [...published.map(toPublicPath), ...upcoming];
+  },
+  ["path-summaries"],
+  { revalidate: 3600, tags: [CATALOGUE_TAG] },
+);
+
+/** Public listings: published paths plus the drafts shown as "in the works". */
+export async function publicPathSummaries() {
+  return (await summarise()).filter((p) => isDomainLive(p.domainTag));
 }
 
-export async function publicStats() {
-  const published = (await getPublishedPaths()).filter((p) => isDomainLive(p.domainTag));
-  return {
-    domains: liveDomains().length,
-    paths: published.length,
-    dots: published.reduce((n, p) => n + p.dots.length, 0),
-    certifications: new Set(published.flatMap((p) => p.dots.map((d) => d.certification).filter(Boolean))).size,
-  };
-}
+export const publicStats = unstable_cache(
+  async () => {
+    const live = liveDomains().map((d) => d.tag);
+    const where = { isPublished: true, domainTag: { in: live } } as const;
+    const [paths, dots, certifications] = await Promise.all([
+      db.careerPath.count({ where }),
+      db.dot.count({ where: { path: where } }),
+      db.dot.findMany({ where: { path: where, certification: { not: null } }, select: { certification: true }, distinct: ["certification"] }),
+    ]);
+    return { domains: live.length, paths, dots, certifications: certifications.length };
+  },
+  ["public-stats"],
+  { revalidate: 3600, tags: [CATALOGUE_TAG] },
+);
 
 export type DomainCounts = Record<string, { paths: number; dots: number }>;
 
 /** Published path and dot counts per domain, for navigation and hero cards. */
-export async function publicDomainCounts(): Promise<DomainCounts> {
-  const published = (await getPublishedPaths()).filter((p) => isDomainLive(p.domainTag));
-  return published.reduce<DomainCounts>((m, p) => {
-    const c = (m[p.domainTag] ??= { paths: 0, dots: 0 });
-    c.paths += 1;
-    c.dots += p.dots.length;
-    return m;
-  }, {});
-}
+export const publicDomainCounts = unstable_cache(
+  async (): Promise<DomainCounts> => {
+    const live = liveDomains().map((d) => d.tag);
+    const where = { isPublished: true, domainTag: { in: live } } as const;
+    const [paths, dots] = await Promise.all([
+      db.careerPath.groupBy({ by: ["domainTag"], where, _count: { _all: true } }),
+      db.dot.groupBy({ by: ["pathId"], where: { path: where }, _count: { _all: true } }),
+    ]);
+    const owner = new Map(
+      (await db.careerPath.findMany({ where, select: { id: true, domainTag: true } })).map((p) => [p.id, p.domainTag]),
+    );
+    const counts: DomainCounts = {};
+    for (const p of paths) counts[p.domainTag] = { paths: p._count._all, dots: 0 };
+    for (const d of dots) {
+      const tag = owner.get(d.pathId);
+      if (tag && counts[tag]) counts[tag].dots += d._count._all;
+    }
+    return counts;
+  },
+  ["public-domain-counts"],
+  { revalidate: 3600, tags: [CATALOGUE_TAG] },
+);

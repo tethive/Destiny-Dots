@@ -5,10 +5,11 @@ import { Search, X } from "lucide-react";
 import { PathCard } from "@/components/path-card";
 import { domainVars } from "@/components/domain";
 import { Input } from "@/components/ui/input";
-import type { CareerPath, Domain, DomainTag } from "@/lib/catalog";
+import type { Domain, DomainTag, PathSummary } from "@/lib/catalog";
+
 import { cn } from "@/lib/utils";
 
-export function BrowseCatalog({ domains, paths }: { domains: Domain[]; paths: CareerPath[] }) {
+export function BrowseCatalog({ domains, paths }: { domains: Domain[]; paths: PathSummary[] }) {
   const [query, setQuery] = useState("");
   const [domain, setDomain] = useState<DomainTag | "all">("all");
 
@@ -17,7 +18,7 @@ export function BrowseCatalog({ domains, paths }: { domains: Domain[]; paths: Ca
     return paths.filter((p) => {
       if (domain !== "all" && p.domainTag !== domain) return false;
       if (!q) return true;
-      return [p.title, p.summary, ...p.roles, ...p.dots.map((d) => d.title)].some((s) => s.toLowerCase().includes(q));
+      return [p.title, p.summary].some((s) => s.toLowerCase().includes(q));
     });
   }, [paths, query, domain]);
 

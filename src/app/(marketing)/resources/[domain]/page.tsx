@@ -11,7 +11,7 @@ import { Stagger, StaggerItem } from "@/components/motion/reveal";
 import { PathCard } from "@/components/path-card";
 import { Button } from "@/components/ui/button";
 import { getDomain, liveDomains, type Domain } from "@/lib/catalog";
-import { publicDomainCounts, publicPaths } from "@/server/catalog";
+import { publicDomainCounts, publicPathSummaries } from "@/server/catalog";
 
 export async function generateMetadata(props: PageProps<"/resources/[domain]">): Promise<Metadata> {
   const { domain: tag } = await props.params;
@@ -30,7 +30,7 @@ export default async function DomainPage(props: PageProps<"/resources/[domain]">
 
   const domainCounts = await publicDomainCounts();
 
-  const domainPaths = (await publicPaths()).filter((p) => p.domainTag === domain.tag);
+  const domainPaths = (await publicPathSummaries()).filter((p) => p.domainTag === domain.tag);
   const published = domainPaths.filter((p) => p.isPublished);
   const upcoming = domainPaths.filter((p) => !p.isPublished);
   const others = liveDomains()

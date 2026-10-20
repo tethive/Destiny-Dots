@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import type { Prisma, ResourceType } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
+import { CATALOGUE_TAG } from "@/server/catalog";
 import { inspectLink } from "@/server/link-check";
 
 export type CurationResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -35,6 +36,7 @@ export async function setTopicResources(topicKey: string, resourceIds: string[])
 
   await audit(admin.id, "topic.resources", topicKey, { resources: resourceIds.length, dots: dots.length });
   revalidatePath("/admin/curriculum", "layout");
+  revalidateTag(CATALOGUE_TAG, "max");
   revalidatePath("/", "layout");
   return { ok: true, message: `Saved to ${dots.length} ${dots.length === 1 ? "dot" : "dots"}` };
 }

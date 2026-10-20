@@ -1,7 +1,8 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import type { SearchPath } from "@/components/command-menu";
-import { getPublishedPaths } from "@/server/catalog";
+import { db } from "@/lib/db";
+import { CATALOGUE_TAG } from "@/server/catalog";
 
 export const SEARCH_CACHE_TAG = "catalogue-search";
 
@@ -15,16 +16,32 @@ const KEYWORD_DOTS = 25;
 
 export const searchPaths = unstable_cache(
   async (): Promise<SearchPath[]> => {
-    const paths = await getPublishedPaths();
+    // Only the first few dot titles are fetched: enough to match on, without
+    // pulling every dot in the catalogue into memory on each rebuild.
+    const [paths, counts] = await Promise.all([
+      db.careerPath.findMany({
+        where: { isPublished: true },
+        select: {
+          id: true,
+          slug: true,
+          domainTag: true,
+          title: true,
+          roles: true,
+          dots: { take: KEYWORD_DOTS, orderBy: { order: "asc" }, select: { title: true } },
+        },
+        orderBy: [{ domainTag: "asc" }, { title: "asc" }],
+      }),
+      db.dot.groupBy({ by: ["pathId"], where: { path: { isPublished: true } }, _count: { _all: true } }),
+    ]);
+    const total = new Map(counts.map((c) => [c.pathId, c._count._all]));
     return paths.map((p) => ({
       slug: p.slug,
       domainTag: p.domainTag as SearchPath["domainTag"],
       title: p.title,
-      dotCount: p.dots.length,
-      // Enough to match on, without shipping thousands of dot titles to every page.
-      keywords: `${p.roles.join(" ")} ${p.dots.slice(0, KEYWORD_DOTS).map((d) => d.title).join(" ")}`,
+      dotCount: total.get(p.id) ?? 0,
+      keywords: `${p.roles.join(" ")} ${p.dots.map((d) => d.title).join(" ")}`,
     }));
   },
   ["search-paths"],
-  { revalidate: 300, tags: [SEARCH_CACHE_TAG] },
+  { revalidate: 3600, tags: [SEARCH_CACHE_TAG, CATALOGUE_TAG] },
 );
